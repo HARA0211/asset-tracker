@@ -13,1418 +13,882 @@
 <title>資產累計追蹤</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #f7f6f3;
-    --surface: #ffffff;
-    --surface2: #f0ede8;
-    --border: rgba(0,0,0,0.10);
-    --border2: rgba(0,0,0,0.18);
-    --text: #1a1916;
-    --text2: #6b6a65;
-    --text3: #9a9994;
-    --accent: #3d4f99;
-    --accent-bg: #eef0fb;
-    --green: #1D9E75;
-    --green-bg: #e1f5ee;
-    --blue: #378ADD;
-    --blue-bg: #e6f1fb;
-    --red: #c94040;
-    --red-bg: #fceaea;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161614;
-      --surface: #1f1e1c;
-      --surface2: #2a2927;
-      --border: rgba(255,255,255,0.10);
-      --border2: rgba(255,255,255,0.18);
-      --text: #eeede8;
-      --text2: #9a9994;
-      --text3: #6b6a65;
-      --accent: #7b8ddd;
-      --accent-bg: #252942;
-      --green: #4ecba3;
-      --green-bg: #1a3d30;
-      --blue: #6baee8;
-      --blue-bg: #1a2e45;
-      --red: #e06060;
-      --red-bg: #3d1c1c;
-      --shadow: 0 1px 4px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.07);
-    }
-  }
-
-  body {
-    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
-
-  /* ── Sidebar layout ── */
-  .layout { display: flex; min-height: 100vh; }
-
-  .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--surface);
-    border-right: 0.5px solid var(--border);
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
-
-  .sidebar-logo {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    padding: 0.5rem 0.75rem 1.25rem;
-    border-bottom: 0.5px solid var(--border);
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .sidebar-logo svg { width: 20px; height: 20px; flex-shrink: 0; }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0.6rem 0.75rem;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    color: var(--text2);
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
-  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-  .sidebar-section {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--text3);
-    padding: 1rem 0.75rem 0.25rem;
-    text-transform: uppercase;
-  }
-
-  .sidebar-spacer { flex: 1; }
-
-  /* ── Main ── */
-  .main { flex: 1; padding: 2rem 2.5rem; max-width: 900px; }
-
-  .page { display: none; }
-  .page.active { display: block; }
-
-  .page-header { margin-bottom: 1.75rem; }
-  .page-header h1 { font-size: 22px; font-weight: 600; color: var(--text); }
-  .page-header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
-
-  /* ── Summary cards ── */
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 1.75rem; }
-
-  .metric {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 1.1rem 1.25rem;
-    box-shadow: var(--shadow);
-  }
-
-  .metric-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
-  .metric-value { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
-  .metric-sub { font-size: 12px; margin-top: 5px; }
-  .up { color: var(--green); }
-  .down { color: var(--red); }
-
-  /* ── Cards ── */
-  .card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.25rem;
-    box-shadow: var(--shadow);
-  }
-
-  .card-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-
-  .card-title svg { width: 16px; height: 16px; color: var(--text2); }
-
-  /* ── Form ── */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: end; }
-  .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-group label { font-size: 12px; color: var(--text2); font-weight: 500; }
-
-  input[type="text"], input[type="number"], input[type="month"], select, textarea {
-    background: var(--surface2);
-    border: 0.5px solid var(--border2);
-    border-radius: var(--radius-sm);
-    padding: 8px 10px;
-    font-size: 14px;
-    color: var(--text);
-    width: 100%;
-    outline: none;
-    transition: border-color 0.15s;
-    font-family: inherit;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(61,79,153,0.12);
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 0.5px solid var(--border2);
-    background: var(--surface);
-    color: var(--text);
-    transition: background 0.15s;
-    white-space: nowrap;
-    font-family: inherit;
-  }
-
-  .btn:hover { background: var(--surface2); }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-
-  .btn-primary:hover { opacity: 0.88; }
-
-  .btn svg { width: 15px; height: 15px; }
-
-  /* ── Table ── */
-  .table-wrap { overflow-x: auto; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th {
-    text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--text3);
-    padding: 8px 10px;
-    border-bottom: 0.5px solid var(--border);
-    text-transform: uppercase;
-  }
-
-  td {
-    padding: 11px 10px;
-    border-bottom: 0.5px solid var(--border);
-    color: var(--text);
-    vertical-align: middle;
-  }
-
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface2); }
-
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 20px;
-  }
-
-  .badge-cash { background: var(--green-bg); color: var(--green); }
-  .badge-stock { background: var(--blue-bg); color: var(--blue); }
-
-  .btn-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text3);
-    padding: 4px 6px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    transition: background 0.12s, color 0.12s;
-  }
-
-  .btn-icon:hover { background: var(--red-bg); color: var(--red); }
-  .btn-icon svg { width: 15px; height: 15px; }
-
-  /* ── Chart ── */
-  .chart-wrap { position: relative; width: 100%; height: 280px; }
-
-  .tab-row { display: flex; gap: 4px; margin-bottom: 1rem; }
-  .tab {
-    padding: 5px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    cursor: pointer;
-    border: 0.5px solid var(--border);
-    background: none;
-    color: var(--text2);
-    font-family: inherit;
-    transition: background 0.12s;
-  }
-
-  .tab.active {
-    background: var(--accent-bg);
-    color: var(--accent);
-    border-color: transparent;
-    font-weight: 500;
-  }
-
-  /* ── Legend ── */
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text2); margin-bottom: 12px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-
-  /* ── Empty state ── */
-  .empty {
-    text-align: center;
-    padding: 2.5rem;
-    color: var(--text3);
-    font-size: 14px;
-  }
-
-  .empty svg { width: 40px; height: 40px; margin: 0 auto 12px; display: block; opacity: 0.35; }
-
-  /* ── Dynamic field rows ── */
-  .field-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .field-row .field-name {
-    flex: 1;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    min-width: 0;
-  }
-
-  .field-row input[type="number"] {
-    width: 140px;
-    flex-shrink: 0;
-    font-size: 14px;
-  }
-
-  .field-row .usd-tag {
-    font-size: 11px;
-    color: var(--green);
-    white-space: nowrap;
-  }
-
-  .btn-add-field {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 13px;
-    color: var(--text3);
-    background: none;
-    border: 0.5px dashed var(--border2);
-    border-radius: var(--radius-sm);
-    padding: 7px 12px;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 4px;
-    font-family: inherit;
-    transition: background 0.12s, color 0.12s;
-  }
-
-  .btn-add-field:hover { background: var(--surface2); color: var(--text); }
-
-  .btn-remove-field {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text3);
-    padding: 4px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .btn-remove-field:hover { color: var(--red); }
-
-  /* ── Form section label ── */
-  .form-section-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text2);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 0.5px solid var(--border);
-  }
-
-  /* ── Note (add form) ── */
-  .form-note { margin-top: 10px; }
-
-  /* ── Goal page ── */
-  .goal-display {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 0.75rem;
-  }
-
-  .goal-big { font-size: 28px; font-weight: 600; color: var(--text); }
-  .goal-label { font-size: 14px; color: var(--text2); }
-
-  .progress-bar-wrap { background: var(--surface2); border-radius: 20px; height: 10px; overflow: hidden; margin: 8px 0; }
-  .progress-bar { height: 100%; border-radius: 20px; background: var(--accent); transition: width 0.4s; }
-
-  .progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); }
-
-  /* ── Export button group ── */
-  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
-
-  /* ── Divider ── */
-  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
-
-  /* ── Pie chart layout ── */
-  .pie-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    align-items: center;
-  }
-
-  /* ── Bottom nav bar (mobile) ── */
-  .bottom-nav {
-    display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: calc(64px + env(safe-area-inset-bottom, 0px));
-    background: var(--surface);
-    border-top: 0.5px solid var(--border);
-    z-index: 100;
-  }
-
-  .bottom-nav-inner {
-    display: flex;
-    height: 64px;
-    align-items: stretch;
-  }
-
-  .bnav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    border: none;
-    background: none;
-    color: var(--text3);
-    font-size: 10px;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bnav-item svg { width: 22px; height: 22px; }
-  .bnav-item.active { color: var(--accent); }
-  .bnav-item span { font-size: 10px; font-weight: 500; }
-
-  /* ── Mobile overrides ── */
-  @media (max-width: 700px) {
-    .sidebar { display: none; }
-    .bottom-nav { display: block; }
-    .layout { flex-direction: column; }
-    .main {
-      padding: 1rem 1rem calc(80px + env(safe-area-inset-bottom, 0px));
-      max-width: 100%;
-      width: 100%;
-    }
-    .page-header { margin-bottom: 1.25rem; }
-    .page-header h1 { font-size: 20px; }
-    .summary-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
-    .metric { padding: 0.85rem 1rem; }
-    .metric-value { font-size: 18px; }
-    .card { padding: 1rem 1.1rem; margin-bottom: 1rem; }
-    .pie-layout { grid-template-columns: 1fr; }
-    .form-grid { grid-template-columns: 1fr; gap: 8px; }
-    .chart-wrap { height: 220px; }
-    table { font-size: 12px; }
-    th, td { padding: 8px 6px; }
-    .btn { font-size: 13px; padding: 8px 14px; }
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f2f2f7;--surface:#fff;--surface2:#f2f2f7;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+  --text:#1c1c1e;--text2:#6c6c70;--text3:#aeaeb2;
+  --accent:#3d4f99;--accent-light:#eef0fb;
+  --green:#34c759;--green-d:#1a8f38;--green-bg:#e8f9ed;
+  --red:#ff3b30;--red-d:#c0392b;--red-bg:#fff0ef;
+  --blue:#007aff;--blue-bg:#e8f2ff;
+  --r-sm:10px;--r-md:14px;--r-lg:18px;
+  --shadow:0 1px 4px rgba(0,0,0,0.07);
+  --bnav:56px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--surface:#2c2c2e;--surface2:#3a3a3c;
+  --border:rgba(255,255,255,0.10);--border2:rgba(255,255,255,0.18);
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#6c6c70;
+  --accent:#7b8ddd;--accent-light:#252942;
+  --green:#30d158;--green-d:#30d158;--green-bg:#1a3326;
+  --red:#ff453a;--red-d:#ff453a;--red-bg:#3d1c1c;
+  --blue:#0a84ff;--blue-bg:#1a2e45;
+  --shadow:0 1px 4px rgba(0,0,0,0.3);
+}}
+html,body{height:100%}
+body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+
+/* Layout */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:.5px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{font-size:15px;font-weight:700;color:var(--text);padding:.5rem .75rem 1.25rem;border-bottom:.5px solid var(--border);margin-bottom:.5rem;display:flex;align-items:center;gap:8px}
+.sidebar-logo svg{width:20px;height:20px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.6rem .75rem;border-radius:var(--r-sm);font-size:14px;color:var(--text2);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:background .15s,color .15s;font-family:inherit}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-spacer{flex:1}
+.main{flex:1;padding:1.5rem 1.5rem 2rem;max-width:860px}
+.page{display:none}.page.active{display:block}
+
+/* Page header */
+.page-header{margin-bottom:1.25rem}
+.page-header h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.page-header p{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* Hero */
+.hero-card{background:var(--accent);border-radius:var(--r-lg);padding:1.5rem 1.25rem 1.25rem;margin-bottom:1rem;color:#fff}
+.hero-label{font-size:11px;font-weight:700;opacity:.7;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.hero-value{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1.1}
+.hero-change{font-size:13px;margin-top:6px;opacity:.85;font-weight:500}
+.hero-sub{font-size:11px;opacity:.6;margin-top:5px}
+
+/* Section heading */
+.sec-heading{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:0 2px;margin:1.25rem 0 .5rem}
+
+/* Overview pie */
+.ov-pie-wrap{display:flex;align-items:center;gap:16px}
+.ov-pie-leg-item{display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:6px}
+.ov-pli-l{display:flex;align-items:center;gap:6px;min-width:0}
+.ov-pli-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.ov-pli-name{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-pli-val{font-weight:700;color:var(--text);flex-shrink:0;font-size:12px}
+.ov-total-row{display:flex;justify-content:space-between;font-size:13px}
+.ov-total-row .otr-label{color:var(--text2)}.ov-total-row .otr-val{font-weight:700}
+
+/* Metrics grid (kept for potential future use) */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:.25rem}
+.mc{background:var(--surface);border-radius:var(--r-md);padding:.85rem 1rem;box-shadow:var(--shadow)}
+.mc .mc-label{font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500}
+.mc .mc-value{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.mc .mc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.mc.liab .mc-value{color:var(--red)}
+
+/* Card */
+.card{background:var(--surface);border-radius:var(--r-lg);padding:1.1rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:.9rem;display:flex;align-items:center;gap:6px}
+.card-title svg{width:15px;height:15px;color:var(--text2)}
+
+/* Form */
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:.8rem}
+.form-group:last-child{margin-bottom:0}
+.form-label{font-size:12px;font-weight:600;color:var(--text2)}
+input[type="text"],input[type="number"],input[type="month"],select,textarea{
+  background:var(--surface2);border:1.5px solid transparent;border-radius:var(--r-sm);
+  padding:11px 13px;font-size:16px;color:var(--text);width:100%;outline:none;
+  transition:border-color .15s;font-family:inherit;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface)}
+
+/* Form divider */
+.form-divider{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:1.25rem 0 .6rem}
+.form-divider .fd-line{flex:1;height:.5px;background:var(--border2)}
+.form-divider.asset{color:var(--green-d)}.form-divider.liab{color:var(--red)}
+
+/* Dynamic field rows */
+.field-row{display:flex;align-items:center;background:var(--surface2);border-radius:var(--r-sm);padding:0 2px 0 12px;margin-bottom:8px;min-height:48px;gap:6px}
+.fr-label{font-size:14px;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-input-wrap{display:flex;align-items:center;flex-shrink:0;gap:4px}
+.field-row input[type="number"]{background:var(--surface);border:1.5px solid transparent;border-radius:8px;padding:7px 8px;font-size:15px;text-align:right;width:100px;color:var(--text);font-family:inherit;-webkit-appearance:none}
+.field-row input[type="number"]:focus{border-color:var(--accent);outline:none}
+.fr-unit{font-size:12px;color:var(--text3);min-width:28px}
+.fr-usd-sub{font-size:11px;color:var(--blue);display:none;white-space:nowrap}
+.fr-sep{width:.5px;height:28px;background:var(--border2);flex-shrink:0;margin:0 2px}
+.btn-remove{background:none;border:none;cursor:pointer;color:var(--text3);padding:8px 6px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
+.btn-remove:active{color:var(--red)}
+.btn-remove svg{width:18px;height:18px}
+
+.btn-add-field{display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:600;color:var(--accent);background:var(--accent-light);border:none;border-radius:var(--r-sm);padding:12px;cursor:pointer;width:100%;font-family:inherit;-webkit-tap-highlight-color:transparent;transition:opacity .15s;margin-top:2px}
+.btn-add-field:active{opacity:.7}
+.btn-add-field svg{width:16px;height:16px}
+
+/* USD rate box */
+.usd-rate-box{display:none;margin-top:10px;padding:10px 12px;background:var(--blue-bg);border-radius:var(--r-sm)}
+.usd-rate-box .urb-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px}
+.urb-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.urb-row input{width:90px;padding:7px 10px;font-size:14px;background:var(--surface);border:1.5px solid transparent}
+.urb-row input:focus{border-color:var(--blue)}
+.rate-badge{font-size:11px;color:var(--green-d);font-weight:600;margin-left:4px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:12px 18px;border-radius:var(--r-sm);font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--surface2);color:var(--text);transition:opacity .15s;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.7}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-danger{background:var(--red-bg);color:var(--red)}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:1rem}
+.save-msg{font-size:13px;font-weight:600}
+.save-msg.ok{color:var(--green-d)}.save-msg.err{color:var(--red)}
+
+/* History card list */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.hi-card{background:var(--surface);border-radius:var(--r-md);padding:1rem;box-shadow:var(--shadow)}
+.hi-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.hi-month{font-size:13px;font-weight:700;color:var(--text2)}
+.hi-right{text-align:right}
+.hi-net{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.hi-delta{font-size:12px;font-weight:600;margin-top:2px}
+.hi-delta.up{color:var(--green-d)}.hi-delta.down{color:var(--red)}
+.hi-fields{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:8px;padding-top:8px;border-top:.5px solid var(--border)}
+.hi-field{display:flex;justify-content:space-between;font-size:12px;gap:4px}
+.hf-name{color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hf-val{font-weight:600;color:var(--text);flex-shrink:0}
+.hf-val.red{color:var(--red)}
+.hi-note{font-size:12px;color:var(--text3);margin-top:6px}
+.hi-foot{display:flex;justify-content:flex-end;margin-top:8px;padding-top:8px;border-top:.5px solid var(--border)}
+.btn-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:6px;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.btn-del:active{color:var(--red)}
+.btn-del svg{width:14px;height:14px}
+
+/* Chart */
+.chart-wrap{position:relative;width:100%;height:240px}
+.tab-row{display:flex;gap:0;margin-bottom:.9rem;background:var(--surface2);border-radius:var(--r-sm);padding:3px}
+.tab{flex:1;padding:7px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);font-family:inherit;transition:background .15s,color .15s;text-align:center}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-bottom:10px}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* Pie */
+.pie-layout{display:flex;flex-direction:column;gap:1rem}
+.pie-leg-item{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:3px 0}
+.pli-l{display:flex;align-items:center;gap:7px}
+.pli-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.pli-val{font-weight:700}
+.pie-totals{margin-top:8px;padding-top:8px;border-top:.5px solid var(--border);display:flex;flex-direction:column;gap:5px}
+.pie-total-row{display:flex;justify-content:space-between;font-size:13px}
+.ptr-label{color:var(--text2)}.ptr-val{font-weight:700}
+
+/* Goal */
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.progress-bar-wrap{background:var(--surface2);border-radius:20px;height:8px;overflow:hidden;margin:10px 0 5px}
+.progress-bar{height:100%;border-radius:20px;background:var(--accent);transition:width .4s}
+.progress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--text3)}
+.goal-val{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:2px}
+
+/* Export */
+.export-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid var(--border)}
+.export-row:last-child{border-bottom:none;padding-bottom:0}
+.er-info .er-title{font-size:15px;font-weight:600;color:var(--text)}
+.er-info .er-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.er-btn{background:var(--accent-light);color:var(--accent);border:none;border-radius:var(--r-sm);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;margin-left:12px;-webkit-tap-highlight-color:transparent}
+.er-btn:active{opacity:.7}
+.er-btn.danger{background:var(--red-bg);color:var(--red)}
+
+/* Empty */
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3)}
+.empty svg{width:44px;height:44px;margin:0 auto 12px;display:block;opacity:.3}
+.empty p{font-size:14px}
+
+/* Bottom nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(var(--bnav) + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:.5px solid var(--border);z-index:100}
+.bottom-nav-inner{display:flex;height:var(--bnav);align-items:stretch}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--text3);font-size:10px;font-weight:500;font-family:inherit;cursor:pointer;padding:0;transition:color .15s;-webkit-tap-highlight-color:transparent}
+.bnav-item svg{width:24px;height:24px}
+.bnav-item.active{color:var(--accent)}
+
+/* Mobile */
+@media(max-width:700px){
+  .sidebar{display:none}
+  .bottom-nav{display:block}
+  .layout{flex-direction:column}
+  .main{padding:.85rem .85rem calc(var(--bnav) + env(safe-area-inset-bottom,0px) + .85rem);max-width:100%;width:100%}
+  .page-header{margin-bottom:.85rem}
+  .page-header h1{font-size:22px}
+  .hero-value{font-size:28px}
+  .chart-wrap{height:200px}
+  .goal-grid{grid-template-columns:1fr}
+}
+.divider{border:none;border-top:.5px solid var(--border);margin:1rem 0}
 </style>
 </head>
 <body>
-
 <div class="layout">
-  <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-        <polyline points="16 7 22 7 22 13"></polyline>
-      </svg>
-      資產累計追蹤
+
+<!-- Sidebar (desktop) -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    資產累計追蹤
+  </div>
+  <button class="nav-item active" onclick="nav('overview',this)" data-page="overview">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>總覽
+  </button>
+  <button class="nav-item" onclick="nav('history',this)" data-page="history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>歷史記錄
+  </button>
+  <button class="nav-item" onclick="nav('chart',this)" data-page="chart">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>趨勢圖表
+  </button>
+  <button class="nav-item" onclick="nav('goal',this)" data-page="goal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>目標設定
+  </button>
+  <button class="nav-item" onclick="nav('export',this)" data-page="export">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>匯出備份
+  </button>
+  <div class="sidebar-spacer"></div>
+  <p style="font-size:11px;color:var(--text3);padding:.5rem .75rem">資料存於本機瀏覽器</p>
+</nav>
+
+<main class="main">
+
+<!-- 總覽 -->
+<div id="page-overview" class="page active">
+  <div class="page-header"><h1>總覽</h1><p id="overview-date"></p></div>
+
+  <div class="hero-card">
+    <div class="hero-label">淨資產</div>
+    <div class="hero-value" id="m-total">–</div>
+    <div class="hero-change" id="m-change"></div>
+    <div class="hero-sub" id="m-sub"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="ov-pie-wrap">
+      <div style="position:relative;width:160px;height:160px;flex-shrink:0;">
+        <canvas id="overviewPieChart" role="img" aria-label="資產負債圓餅圖"></canvas>
+      </div>
+      <div id="ov-pie-legend" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+    <div id="ov-pie-totals" style="margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;flex-direction:column;gap:5px;"></div>
+  </div>
+
+  <div class="sec-heading" style="margin-top:1.5rem">新增本月記錄</div>
+  <div class="card">
+    <div class="form-group">
+      <label class="form-label">月份</label>
+      <input type="month" id="inp-month">
     </div>
 
-    <button class="nav-item active" onclick="showPage('overview',this)" data-page="overview">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      總覽
+    <div class="form-divider asset"><span>資產</span><span class="fd-line"></span></div>
+    <div id="asset-fields"></div>
+    <button class="btn-add-field" onclick="addField('asset')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增資產項目
     </button>
 
-    <button class="nav-item" onclick="showPage('history',this)" data-page="history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
-      歷史記錄
+    <div class="form-divider liab"><span>負債</span><span class="fd-line"></span></div>
+    <div id="liab-fields"></div>
+    <button class="btn-add-field" onclick="addField('liab')" style="margin-bottom:0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新增負債項目
     </button>
 
-    <button class="nav-item" onclick="showPage('chart',this)" data-page="chart">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      趨勢圖表
-    </button>
-
-    <div class="sidebar-section">工具</div>
-
-    <button class="nav-item" onclick="showPage('goal',this)" data-page="goal">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      目標設定
-    </button>
-
-    <button class="nav-item" onclick="showPage('export',this)" data-page="export">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      匯出資料
-    </button>
-
-    <div class="sidebar-spacer"></div>
-
-    <div style="font-size:11px; color:var(--text3); padding:0.5rem 0.75rem;">
-      資料儲存於本機瀏覽器
-    </div>
-  </nav>
-
-  <!-- Main content -->
-  <main class="main">
-
-    <!-- ── 總覽 ── -->
-    <div id="page-overview" class="page active">
-      <div class="page-header">
-        <h1>總覽</h1>
-        <p id="overview-date">載入中…</p>
-      </div>
-
-      <div class="summary-grid">
-        <div class="metric" style="grid-column: 1 / -1; background: var(--accent-bg); border-color: var(--accent);">
-          <div class="metric-label" style="color:var(--accent);">淨資產（資產 − 負債）</div>
-          <div class="metric-value" id="m-total">–</div>
-          <div class="metric-sub" id="m-change"></div>
-        </div>
-      </div>
-
-      <div id="asset-cards-wrap">
-        <div style="font-size:11px; font-weight:600; color:var(--green); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          資產
-        </div>
-        <div class="summary-grid" id="asset-metrics" style="margin-bottom:1.25rem;"></div>
-      </div>
-
-      <div id="liab-cards-wrap">
-        <div style="font-size:11px; font-weight:600; color:var(--red); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
-          負債
-        </div>
-        <div class="summary-grid" id="liab-metrics"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          新增本月記錄
-        </div>
-
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label>月份</label>
-          <input type="month" id="inp-month">
-        </div>
-
-        <div class="form-section-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--green)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          資產
-        </div>
-        <div id="asset-fields"></div>
-        <button class="btn-add-field" onclick="addField('asset')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          新增資產項目
-        </button>
-
-        <div class="form-section-label" style="margin-top:1.25rem;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--red)"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
-          負債
-        </div>
-        <div id="liab-fields"></div>
-        <button class="btn-add-field" onclick="addField('liab')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          新增負債項目
-        </button>
-
-        <div id="usd-preview" style="display:none; margin-top:10px; padding:10px 12px; background:var(--blue-bg); border-radius:var(--radius-sm); font-size:13px; color:var(--blue);">
-          <span id="usd-preview-text"></span>
-          <span style="margin-left:8px; font-size:12px; color:var(--text3);">（匯率可手動調整）</span>
-          <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
-            <span style="font-size:12px; color:var(--text2);">使用匯率：1 USD =</span>
-            <input type="number" id="inp-rate" style="width:80px; font-size:13px;" oninput="recalcUSD()">
-            <span style="font-size:12px; color:var(--text2);">TWD</span>
-          </div>
-        </div>
-
-        <div class="form-note">
-          <div class="form-group">
-            <label>備註（選填）</label>
-            <input type="text" id="inp-note" placeholder="例：加薪、領股息、年終獎金…">
-          </div>
-        </div>
-
-        <div style="margin-top:1.25rem; display:flex; gap:10px; align-items:center;">
-          <button class="btn btn-primary" onclick="addRecord()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            儲存記錄
-          </button>
-          <button class="btn" onclick="clearForm()">清除</button>
-          <div id="add-msg" style="font-size:13px; margin-left:4px;"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
-          近期趨勢
-        </div>
-        <div class="legend">
-          <span class="legend-item"><span class="legend-dot" style="background:#3d4f99"></span>總資產</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>台幣現金</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#4ecba3"></span>外幣現金</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>台股</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#8abbee"></span>美股</span>
-        </div>
-        <div class="chart-wrap"><canvas id="overviewChart" role="img" aria-label="資產趨勢折線圖"></canvas></div>
+    <div class="usd-rate-box" id="usd-rate-box">
+      <div class="urb-title">美金匯率</div>
+      <div class="urb-row">
+        <span>1 USD =</span>
+        <input type="number" id="inp-rate" inputmode="decimal" step="0.01" placeholder="32.5" oninput="recalcUSD()">
+        <span>TWD</span>
+        <span class="rate-badge" id="rate-badge"></span>
       </div>
     </div>
 
-    <!-- ── 歷史記錄 ── -->
-    <div id="page-history" class="page">
-      <div class="page-header">
-        <h1>歷史記錄</h1>
-        <p id="history-count">共 0 筆記錄</p>
-      </div>
-
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead id="history-thead">
-              <tr>
-                <th>月份</th>
-                <th style="text-align:right">台幣現金</th>
-                <th style="text-align:right">外幣現金</th>
-                <th style="text-align:right">台股</th>
-                <th style="text-align:right">美股</th>
-                <th style="text-align:right; color:var(--red)">信用卡</th>
-                <th style="text-align:right; color:var(--red)">信貸</th>
-                <th style="text-align:right">淨資產</th>
-                <th style="text-align:right">月變動</th>
-                <th>備註</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="history-tbody"></tbody>
-          </table>
-        </div>
-        <div id="history-empty" class="empty" style="display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          尚未有任何記錄，請先前往「新增記錄」
-        </div>
-      </div>
+    <div style="margin-top:1rem" class="form-group">
+      <label class="form-label">備註（選填）</label>
+      <input type="text" id="inp-note" placeholder="例：加薪、領股息…">
     </div>
 
-    <!-- ── 趨勢圖表 ── -->
-    <div id="page-chart" class="page">
-      <div class="page-header">
-        <h1>趨勢圖表</h1>
-        <p>資產累計視覺化分析</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title">資產總覽</div>
-        <div class="tab-row">
-          <button class="tab active" onclick="setChart('line',this,'main')">折線圖</button>
-          <button class="tab" onclick="setChart('bar',this,'main')">長條圖</button>
-        </div>
-        <div class="legend">
-          <span class="legend-item"><span class="legend-dot" style="background:#3d4f99"></span>總資產</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>台幣現金</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#4ecba3"></span>外幣現金</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>台股</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#8abbee"></span>美股</span>
-        </div>
-        <div class="chart-wrap"><canvas id="mainChart" role="img" aria-label="資產趨勢圖"></canvas></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">月變動金額</div>
-        <div class="chart-wrap"><canvas id="deltaChart" role="img" aria-label="每月資產變動金額"></canvas></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">資產組成比例（最新月份）</div>
-        <div class="pie-layout">
-          <div class="chart-wrap" style="height:220px;"><canvas id="pieChart" role="img" aria-label="資產組成圓餅圖"></canvas></div>
-          <div id="pie-legend" style="font-size:13px; color:var(--text2);"></div>
-        </div>
-      </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addRecord()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        儲存記錄
+      </button>
+      <button class="btn" onclick="clearForm()">清除</button>
+      <span class="save-msg" id="add-msg"></span>
     </div>
+  </div>
 
-    <!-- ── 目標設定 ── -->
-    <div id="page-goal" class="page">
-      <div class="page-header">
-        <h1>目標設定</h1>
-        <p>設定你的資產目標並追蹤進度</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title">設定目標</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end;">
-          <div class="form-group">
-            <label>目標金額（元）</label>
-            <input type="number" id="goal-amount" placeholder="例：5000000" min="0">
-          </div>
-          <div class="form-group">
-            <label>目標名稱（選填）</label>
-            <input type="text" id="goal-name" placeholder="例：退休金、購屋頭期款">
-          </div>
-        </div>
-        <button class="btn btn-primary" style="margin-top:12px;" onclick="saveGoal()">儲存目標</button>
-      </div>
-
-      <div class="card" id="goal-progress-card">
-        <div class="card-title">目標進度</div>
-        <div id="goal-display"></div>
-      </div>
-    </div>
-
-    <!-- ── 匯出 ── -->
-    <div id="page-export" class="page">
-      <div class="page-header">
-        <h1>匯出資料</h1>
-        <p>將資料備份或轉移到其他工具</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title">匯出 CSV</div>
-        <p style="font-size:13px; color:var(--text2); margin-bottom:1rem; line-height:1.7;">
-          匯出為 CSV 格式，可用 Excel 或 Google 試算表開啟。
-        </p>
-        <button class="btn btn-primary" onclick="exportCSV()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下載 CSV
-        </button>
-      </div>
-
-      <div class="card">
-        <div class="card-title">匯出 JSON（備份）</div>
-        <p style="font-size:13px; color:var(--text2); margin-bottom:1rem; line-height:1.7;">
-          匯出完整資料備份，可日後重新匯入。
-        </p>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="exportJSON()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            下載 JSON
-          </button>
-          <button class="btn" onclick="importJSON()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            匯入 JSON
-          </button>
-        </div>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(this)">
-      </div>
-
-      <div class="card">
-        <div class="card-title" style="color:var(--red);">危險區域</div>
-        <p style="font-size:13px; color:var(--text2); margin-bottom:1rem;">清除所有本機資料，此操作無法復原。</p>
-        <button class="btn" style="border-color:var(--red); color:var(--red);" onclick="clearAll()">清除所有資料</button>
-      </div>
-    </div>
-
-  </main>
+  <div class="sec-heading">近期趨勢</div>
+  <div class="card">
+    <div class="legend" id="overview-legend"></div>
+    <div class="chart-wrap"><canvas id="overviewChart" role="img" aria-label="資產趨勢折線圖"></canvas></div>
+  </div>
 </div>
 
-<!-- ── Bottom nav bar ── -->
+<!-- 歷史記錄 -->
+<div id="page-history" class="page">
+  <div class="page-header"><h1>歷史記錄</h1><p id="history-count">共 0 筆記錄</p></div>
+  <div id="history-list" class="history-list"></div>
+  <div id="history-empty" class="empty" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <p>尚未有任何記錄</p>
+  </div>
+</div>
+
+<!-- 趨勢圖表 -->
+<div id="page-chart" class="page">
+  <div class="page-header"><h1>趨勢圖表</h1><p>資產累計視覺化分析</p></div>
+  <div class="card">
+    <div class="card-title">淨資產走勢</div>
+    <div class="tab-row">
+      <button class="tab active" onclick="setChart('line',this,'main')">折線</button>
+      <button class="tab" onclick="setChart('bar',this,'main')">長條</button>
+    </div>
+    <div class="legend" id="main-legend"></div>
+    <div class="chart-wrap"><canvas id="mainChart" role="img" aria-label="資產趨勢圖"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">月變動金額</div>
+    <div class="chart-wrap"><canvas id="deltaChart" role="img" aria-label="每月資產變動金額"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">資產組成比例</div>
+    <div class="pie-layout">
+      <div class="chart-wrap" style="height:200px"><canvas id="pieChart" role="img" aria-label="資產組成圓餅圖"></canvas></div>
+      <div>
+        <div id="pie-legend"></div>
+        <div class="pie-totals" id="pie-totals"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 目標設定 -->
+<div id="page-goal" class="page">
+  <div class="page-header"><h1>目標設定</h1><p>設定淨資產目標並追蹤進度</p></div>
+  <div class="card">
+    <div class="card-title">設定目標</div>
+    <div class="goal-grid">
+      <div class="form-group">
+        <label class="form-label">目標名稱（選填）</label>
+        <input type="text" id="goal-name" placeholder="例：退休金">
+      </div>
+      <div class="form-group">
+        <label class="form-label">目標金額（元）</label>
+        <input type="number" id="goal-amount" inputmode="numeric" pattern="[0-9]*" placeholder="5000000" min="0" step="1" oninput="this.value=Math.floor(Math.abs(+this.value))||''">
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="saveGoal()">儲存目標</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title">目標進度</div>
+    <div id="goal-display"><p style="font-size:13px;color:var(--text3)">尚未設定目標</p></div>
+  </div>
+</div>
+
+<!-- 匯出備份 -->
+<div id="page-export" class="page">
+  <div class="page-header"><h1>匯出備份</h1><p>定期備份以保護你的資料</p></div>
+  <div class="card">
+    <div class="export-row">
+      <div class="er-info"><div class="er-title">備份（JSON）</div><div class="er-desc">完整備份，可還原所有資料</div></div>
+      <button class="er-btn" onclick="exportJSON()">下載備份</button>
+    </div>
+    <div class="export-row">
+      <div class="er-info"><div class="er-title">還原（JSON）</div><div class="er-desc">從備份檔案還原資料</div></div>
+      <button class="er-btn" onclick="importJSON()">選擇檔案</button>
+    </div>
+    <div class="export-row">
+      <div class="er-info"><div class="er-title">匯出 CSV</div><div class="er-desc">可用 Excel 或試算表開啟</div></div>
+      <button class="er-btn" onclick="exportCSV()">下載 CSV</button>
+    </div>
+    <div class="export-row">
+      <div class="er-info"><div class="er-title">清除所有資料</div><div class="er-desc">此操作無法復原，請先備份</div></div>
+      <button class="er-btn danger" onclick="clearAll()">清除</button>
+    </div>
+  </div>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(this)">
+</div>
+
+</main>
+</div>
+
+<!-- Bottom nav -->
 <nav class="bottom-nav" aria-label="主選單">
   <div class="bottom-nav-inner">
-    <button class="bnav-item active" onclick="showPage('overview',this)" data-page="overview">
+    <button class="bnav-item active" onclick="nav('overview',this)" data-page="overview">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       <span>總覽</span>
     </button>
-    <button class="bnav-item" onclick="showPage('history',this)" data-page="history">
+    <button class="bnav-item" onclick="nav('history',this)" data-page="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
       <span>記錄</span>
     </button>
-    <button class="bnav-item" onclick="showPage('chart',this)" data-page="chart">
+    <button class="bnav-item" onclick="nav('chart',this)" data-page="chart">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span>圖表</span>
     </button>
-    <button class="bnav-item" onclick="showPage('goal',this)" data-page="goal">
+    <button class="bnav-item" onclick="nav('goal',this)" data-page="goal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <span>目標</span>
     </button>
-    <button class="bnav-item" onclick="showPage('export',this)" data-page="export">
+    <button class="bnav-item" onclick="nav('export',this)" data-page="export">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>匯出</span>
+      <span>備份</span>
     </button>
   </div>
 </nav>
 
 <script>
-const STORAGE_KEY = 'asset_tracker_v1';
-const GOAL_KEY = 'asset_goal_v1';
-let records = [];
-let charts = {};
-let currentChartType = { main: 'line' };
+const SK='asset_tracker_v1',FK='asset_fields_v1',GK='asset_goal_v1';
+const COLORS=['#1D9E75','#34c759','#007aff','#5ac8fa','#3d4f99','#af52de','#ff9f0a','#ff6b35','#ff3b30','#ff453a'];
+const DA=[{key:'twCash',name:'台幣現金',usd:false},{key:'fxCash',name:'外幣現金',usd:false},{key:'twStock',name:'台股預估現值',usd:false},{key:'usStock',name:'美股庫存現值',usd:true}];
+const DL=[{key:'creditCard',name:'信用卡未結清',usd:false},{key:'loan',name:'信用貸款',usd:false}];
 
-function load() {
-  try { const r = localStorage.getItem(STORAGE_KEY); if (r) records = JSON.parse(r); } catch(e) {}
-  records.sort((a,b) => a.month.localeCompare(b.month));
-}
+let records=[],fieldDefs={assets:[],liabs:[]},charts={},chartType={main:'line'},usdRate=null;
 
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e) {}
-}
-
-function fmt(n) {
-  if (n === undefined || n === null || isNaN(n)) return '–';
-  return new Intl.NumberFormat('zh-TW', { style:'currency', currency:'TWD', maximumFractionDigits:0 }).format(n);
-}
-
-function fmtMonth(m) {
-  const [y, mo] = m.split('-');
-  return y + '/' + mo;
-}
-
-function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
-
-function showPage(id, el) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelectorAll('.bnav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  if (el) el.classList.add('active');
-  document.querySelectorAll('.bnav-item[data-page="' + id + '"]').forEach(n => n.classList.add('active'));
-  document.querySelectorAll('.nav-item[data-page="' + id + '"]').forEach(n => n.classList.add('active'));
-  renderPage(id);
-}
-
-function renderPage(id) {
-  if (id === 'overview') renderOverview();
-  if (id === 'history') renderHistory();
-  if (id === 'chart') renderAllCharts();
-  if (id === 'goal') renderGoal();
-}
-
-/* ── Field definitions (stored in localStorage) ── */
-const FIELDS_KEY = 'asset_fields_v1';
-const DEFAULT_ASSET_FIELDS = [
-  { key: 'twCash',  name: '台幣現金',        usd: false },
-  { key: 'fxCash',  name: '外幣現金（折台幣）', usd: false },
-  { key: 'twStock', name: '台股總預估現值',    usd: false },
-  { key: 'usStock', name: '美股庫存現值',     usd: true  },
-];
-const DEFAULT_LIAB_FIELDS = [
-  { key: 'creditCard', name: '信用卡尚未結清', usd: false },
-  { key: 'loan',       name: '信用貸款',       usd: false },
-];
-
-let fieldDefs = { assets: [], liabs: [] };
-
-function loadFields() {
-  try {
-    const raw = localStorage.getItem(FIELDS_KEY);
-    if (raw) { fieldDefs = JSON.parse(raw); return; }
-  } catch(e) {}
-  fieldDefs = {
-    assets: DEFAULT_ASSET_FIELDS.map(f => ({...f})),
-    liabs:  DEFAULT_LIAB_FIELDS.map(f => ({...f})),
-  };
+function load(){try{const r=localStorage.getItem(SK);if(r)records=JSON.parse(r);}catch(e){}records.sort((a,b)=>a.month.localeCompare(b.month));}
+function save(){try{localStorage.setItem(SK,JSON.stringify(records));}catch(e){}}
+function loadFields(){
+  try{const r=localStorage.getItem(FK);if(r){fieldDefs=JSON.parse(r);return;}}catch(e){}
+  fieldDefs={assets:DA.map(f=>({...f})),liabs:DL.map(f=>({...f}))};
   saveFields();
 }
+function saveFields(){localStorage.setItem(FK,JSON.stringify(fieldDefs));}
+function genKey(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
 
-function saveFields() {
-  localStorage.setItem(FIELDS_KEY, JSON.stringify(fieldDefs));
+function assetOf(r){return fieldDefs.assets.reduce((s,f)=>s+(r[f.key]||0),0);}
+function liabOf(r){return fieldDefs.liabs.reduce((s,f)=>s+(r[f.key]||0),0);}
+function netOf(r){return assetOf(r)-liabOf(r);}
+
+function fmt(n){
+  if(n===undefined||n===null||isNaN(n))return'–';
+  return new Intl.NumberFormat('zh-TW',{style:'currency',currency:'TWD',maximumFractionDigits:0}).format(n);
+}
+function fmtM(m){const[y,mo]=m.split('-');return y+'/'+mo;}
+function fmtP(n){return(n>=0?'+':'')+n.toFixed(1)+'%';}
+function short(name){return name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值','').replace('尚未結清','');}
+
+function nav(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-page]').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll(`[data-page="${id}"]`).forEach(n=>n.classList.add('active'));
+  if(id==='overview')renderOverview();
+  else if(id==='history')renderHistory();
+  else if(id==='chart')renderAllCharts();
+  else if(id==='goal')renderGoal();
 }
 
-function genKey(prefix) {
-  return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-}
+/* Overview */
+function renderOverview(){
+  const now=new Date();
+  const el=document.getElementById('overview-date');
+  if(el)el.textContent=now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日';
 
-/* ── Totals ── */
-function assetOf(r) {
-  return fieldDefs.assets.reduce((s, f) => s + (r[f.key] || 0), 0);
-}
-function liabOf(r) {
-  return fieldDefs.liabs.reduce((s, f) => s + (r[f.key] || 0), 0);
-}
-function totalOf(r) { return assetOf(r) - liabOf(r); }
+  const totalEl=document.getElementById('m-total');
+  const changeEl=document.getElementById('m-change');
+  const subEl=document.getElementById('m-sub');
+  const assetEl=document.getElementById('asset-metrics');
+  const liabEl=document.getElementById('liab-metrics');
 
-/* ── Overview ── */
-function renderOverview() {
-  const now = new Date();
-  document.getElementById('overview-date').textContent =
-    now.getFullYear() + ' 年 ' + (now.getMonth()+1) + ' 月 ' + now.getDate() + ' 日';
+  renderFormFields();
 
-  const totalEl = document.getElementById('m-total');
-  const changeEl = document.getElementById('m-change');
-  const assetMetrics = document.getElementById('asset-metrics');
-  const liabMetrics  = document.getElementById('liab-metrics');
-
-  if (records.length === 0) {
-    totalEl.textContent = '–';
-    changeEl.textContent = '';
-    assetMetrics.innerHTML = '';
-    liabMetrics.innerHTML  = '';
-    destroyChart('overviewChart');
+  if(!records.length){
+    totalEl.textContent='–';changeEl.textContent='';if(subEl)subEl.textContent='';
+    if(assetEl)assetEl.innerHTML='';if(liabEl)liabEl.innerHTML='';
+    destroyChart('overviewChart');destroyChart('overviewPieChart');
+    const legEl=document.getElementById('ov-pie-legend');if(legEl)legEl.innerHTML='';
+    const totEl=document.getElementById('ov-pie-totals');if(totEl)totEl.innerHTML='';
     return;
   }
+  const last=records[records.length-1];
+  const asset=assetOf(last),liab=liabOf(last),net=asset-liab;
+  totalEl.textContent=fmt(net);
+  if(subEl)subEl.textContent=fmtM(last.month)+' 資料';
 
-  const last  = records[records.length - 1];
-  const asset = assetOf(last);
-  const liab  = liabOf(last);
-  const net   = asset - liab;
+  if(records.length>=2){
+    const prev=netOf(records[records.length-2]);
+    const diff=net-prev,p=prev?diff/Math.abs(prev)*100:0;
+    changeEl.textContent=(diff>=0?'▲ ':'▼ ')+fmt(Math.abs(diff))+' ('+fmtP(p)+') 較上月';
+  } else changeEl.textContent='';
 
-  totalEl.textContent = fmt(net);
+  if(assetEl)assetEl.innerHTML=''; // kept for compat
+  if(liabEl)liabEl.innerHTML='';   // kept for compat
 
-  if (records.length >= 2) {
-    const prevNet = totalOf(records[records.length - 2]);
-    const diff = net - prevNet;
-    const p = prevNet ? (diff / Math.abs(prevNet) * 100) : 0;
-    changeEl.className = 'metric-sub ' + (diff >= 0 ? 'up' : 'down');
-    changeEl.textContent = (diff >= 0 ? '▲ ' : '▼ ') + fmt(Math.abs(diff)) + ' (' + fmtPct(p) + ') 較上月';
-  } else {
-    changeEl.textContent = '';
-  }
+  // Overview pie chart
+  destroyChart('overviewPieChart');
+  const allF=[
+    ...fieldDefs.assets.map((f,i)=>({name:short(f.name),val:last[f.key]||0,color:COLORS[i%COLORS.length],isLiab:false})),
+    ...fieldDefs.liabs.map((f,i) =>({name:short(f.name),val:last[f.key]||0,color:COLORS[(fieldDefs.assets.length+i)%COLORS.length],isLiab:true}))
+  ].filter(f=>f.val>0);
+  const gross=allF.reduce((s,f)=>s+f.val,0);
 
-  assetMetrics.innerHTML = fieldDefs.assets.map(f => `
-    <div class="metric">
-      <div class="metric-label">${f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值','')}</div>
-      <div class="metric-value">${fmt(last[f.key]||0)}</div>
-      <div class="metric-sub">${asset ? '佔資產 '+(((last[f.key]||0)/asset)*100).toFixed(1)+'%' : ''}</div>
-    </div>`).join('');
-
-  liabMetrics.innerHTML = fieldDefs.liabs.map(f => `
-    <div class="metric">
-      <div class="metric-label">${f.name}</div>
-      <div class="metric-value down">${fmt(last[f.key]||0)}</div>
-      <div class="metric-sub">${liab ? '佔負債 '+(((last[f.key]||0)/liab)*100).toFixed(1)+'%' : ''}</div>
-    </div>`).join('');
-
-  renderLineChart('overviewChart', records.slice(-12));
-}
-
-/* ── History ── */
-function renderHistory() {
-  const count = records.length;
-  document.getElementById('history-count').textContent = '共 ' + count + ' 筆記錄';
-  const empty = document.getElementById('history-empty');
-  const tbody = document.getElementById('history-tbody');
-
-  if (count === 0) { empty.style.display = 'block'; tbody.innerHTML = ''; return; }
-  empty.style.display = 'none';
-
-  const allFields = [...fieldDefs.assets, ...fieldDefs.liabs];
-
-  // rebuild header
-  document.getElementById('history-thead').innerHTML =
-    '<tr>' +
-    '<th>月份</th>' +
-    fieldDefs.assets.map(f => `<th style="text-align:right">${f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值','')}</th>`).join('') +
-    fieldDefs.liabs.map(f => `<th style="text-align:right; color:var(--red)">${f.name}</th>`).join('') +
-    '<th style="text-align:right">淨資產</th>' +
-    '<th style="text-align:right">月變動</th>' +
-    '<th>備註</th><th></th>' +
-    '</tr>';
-
-  const sorted = [...records].reverse();
-  tbody.innerHTML = sorted.map((r, i) => {
-    const net = totalOf(r);
-    let deltaHtml = '–';
-    const origIdx = records.length - 1 - i;
-    if (origIdx > 0) {
-      const prevNet = totalOf(records[origIdx - 1]);
-      const diff = net - prevNet;
-      const pct = prevNet ? (diff / Math.abs(prevNet) * 100) : 0;
-      const cls = diff >= 0 ? 'up' : 'down';
-      deltaHtml = `<span class="${cls}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff))}<br><span style="font-size:11px">${fmtPct(pct)}</span></span>`;
-    }
-    return `<tr>
-      <td style="font-weight:500">${fmtMonth(r.month)}</td>
-      ${fieldDefs.assets.map(f => `<td style="text-align:right">${fmt(r[f.key]||0)}</td>`).join('')}
-      ${fieldDefs.liabs.map(f => `<td style="text-align:right; color:var(--red)">${(r[f.key]||0)>0?fmt(r[f.key]):'–'}</td>`).join('')}
-      <td style="text-align:right; font-weight:600">${fmt(net)}</td>
-      <td style="text-align:right">${deltaHtml}</td>
-      <td style="font-size:12px; color:var(--text3)">${r.note||'–'}</td>
-      <td><button class="btn-icon del-btn" data-month="${r.month}" title="刪除">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-      </button></td>
-    </tr>`;
-  }).join('');
-}
-
-/* ── Charts ── */
-function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-}
-
-function getColors() {
-  return { grid: 'rgba(128,128,128,0.12)', text: '#888' };
-}
-
-function renderLineChart(canvasId, data) {
-  destroyChart(canvasId);
-  if (data.length === 0) return;
-  const c = getColors();
-  charts[canvasId] = new Chart(document.getElementById(canvasId), {
-    type: 'line',
-    data: {
-      labels: data.map(r => fmtMonth(r.month)),
-      datasets: [
-        { label:'總資產', data: data.map(r=>totalOf(r)), borderColor:'#3d4f99', backgroundColor:'rgba(61,79,153,0.07)', borderWidth:2, pointRadius:3, tension:0.3, fill:true },
-        { label:'台幣現金', data: data.map(r=>r.twCash||0), borderColor:'#1D9E75', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash:[5,3] },
-        { label:'外幣現金', data: data.map(r=>r.fxCash||0), borderColor:'#4ecba3', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash:[5,3] },
-        { label:'台股', data: data.map(r=>r.twStock||0), borderColor:'#378ADD', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash:[3,3] },
-        { label:'美股', data: data.map(r=>r.usStock||0), borderColor:'#8abbee', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash:[3,3] },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      interaction:{ mode:'index', intersect:false },
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => ' '+ctx.dataset.label+': '+fmt(ctx.raw) } } },
-      scales:{
-        x:{ ticks:{ color:c.text, font:{size:11}, autoSkip:false, maxRotation:45 }, grid:{ color:c.grid } },
-        y:{ ticks:{ color:c.text, font:{size:11}, callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v }, grid:{ color:c.grid } }
-      }
-    }
-  });
-}
-
-function renderAllCharts() {
-  const c = getColors();
-
-  destroyChart('mainChart');
-  if (records.length > 0) {
-    const type = currentChartType.main;
-    charts['mainChart'] = new Chart(document.getElementById('mainChart'), {
-      type,
-      data: {
-        labels: records.map(r => fmtMonth(r.month)),
-        datasets: [
-          { label:'總資產', data: records.map(r=>totalOf(r)), borderColor:'#3d4f99', backgroundColor: type==='bar'?'rgba(61,79,153,0.45)':'rgba(61,79,153,0.08)', borderWidth:2, pointRadius:3, tension:0.3, fill:type==='line' },
-          { label:'台幣現金', data: records.map(r=>r.twCash||0), borderColor:'#1D9E75', backgroundColor: type==='bar'?'rgba(29,158,117,0.45)':'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash: type==='line'?[5,3]:[] },
-          { label:'外幣現金', data: records.map(r=>r.fxCash||0), borderColor:'#4ecba3', backgroundColor: type==='bar'?'rgba(78,203,163,0.45)':'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash: type==='line'?[5,3]:[] },
-          { label:'台股', data: records.map(r=>r.twStock||0), borderColor:'#378ADD', backgroundColor: type==='bar'?'rgba(55,138,221,0.45)':'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash: type==='line'?[3,3]:[] },
-          { label:'美股', data: records.map(r=>r.usStock||0), borderColor:'#8abbee', backgroundColor: type==='bar'?'rgba(138,187,238,0.45)':'transparent', borderWidth:1.5, pointRadius:2.5, tension:0.3, borderDash: type==='line'?[3,3]:[] },
-        ]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        interaction:{ mode:'index', intersect:false },
-        plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw) } } },
-        scales:{
-          x:{ ticks:{ color:c.text, font:{size:11}, autoSkip:false, maxRotation:45 }, grid:{ color:c.grid } },
-          y:{ ticks:{ color:c.text, font:{size:11}, callback: v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v }, grid:{ color:c.grid } }
-        }
-      }
+  const pieCanvas=document.getElementById('overviewPieChart');
+  if(pieCanvas&&allF.length){
+    charts['overviewPieChart']=new Chart(pieCanvas,{
+      type:'doughnut',
+      data:{labels:allF.map(f=>f.name),datasets:[{data:allF.map(f=>f.val),backgroundColor:allF.map(f=>f.color),borderColor:getComputedStyle(document.body).getPropertyValue('background-color')||'#f2f2f7',borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.raw)+' ('+(gross?(ctx.raw/gross*100).toFixed(1):0)+'%)'}}}}
     });
   }
 
+  const legEl=document.getElementById('ov-pie-legend');
+  if(legEl) legEl.innerHTML=allF.map(f=>`
+    <div class="ov-pie-leg-item">
+      <div class="ov-pli-l"><div class="ov-pli-dot" style="background:${f.color}"></div><span class="ov-pli-name">${f.name}</span></div>
+      <span class="ov-pli-val" style="${f.isLiab?'color:var(--red)':''}">${fmt(f.val)}</span>
+    </div>`).join('');
+
+  const totEl=document.getElementById('ov-pie-totals');
+  if(totEl) totEl.innerHTML=`
+    <div class="ov-total-row"><span class="otr-label">資產合計</span><span class="otr-val">${fmt(asset)}</span></div>
+    <div class="ov-total-row"><span class="otr-label">負債合計</span><span class="otr-val" style="color:var(--red)">-${fmt(liab)}</span></div>`;
+
+  renderLineChart('overviewChart',records.slice(-12),'overview-legend');
+}
+
+/* History */
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  const empty=document.getElementById('history-empty');
+  const count=document.getElementById('history-count');
+  count.textContent='共 '+records.length+' 筆記錄';
+  if(!records.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  list.innerHTML=[...records].reverse().map((r,i)=>{
+    const net=netOf(r),origIdx=records.length-1-i;
+    let delta='';
+    if(origIdx>0){
+      const prev=netOf(records[origIdx-1]),diff=net-prev,p=prev?diff/Math.abs(prev)*100:0;
+      const cls=diff>=0?'up':'down';
+      delta=`<div class="hi-delta ${cls}">${diff>=0?'▲':'▼'} ${fmt(Math.abs(diff))} (${fmtP(p)})</div>`;
+    }
+    const aFields=fieldDefs.assets.map(f=>`<div class="hi-field"><span class="hf-name">${short(f.name)}</span><span class="hf-val">${fmt(r[f.key]||0)}</span></div>`).join('');
+    const lFields=fieldDefs.liabs.map(f=>`<div class="hi-field"><span class="hf-name">${short(f.name)}</span><span class="hf-val red">${(r[f.key]||0)>0?'-'+fmt(r[f.key]):'–'}</span></div>`).join('');
+    const note=r.note?`<div class="hi-note">備註：${r.note}</div>`:'';
+    return`<div class="hi-card">
+      <div class="hi-head">
+        <span class="hi-month">${fmtM(r.month)}</span>
+        <div class="hi-right"><div class="hi-net">${fmt(net)}</div>${delta}</div>
+      </div>
+      <div class="hi-fields">${aFields}${lFields}</div>
+      ${note}
+      <div class="hi-foot">
+        <button class="btn-del del-btn" data-month="${r.month}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>刪除
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.del-btn');
+  if(b&&b.dataset.month){
+    if(!confirm('確定要刪除 '+fmtM(b.dataset.month)+' 的記錄？'))return;
+    records=records.filter(r=>r.month!==b.dataset.month);
+    save();renderHistory();
+  }
+});
+
+/* Charts */
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function gc(){return{grid:'rgba(128,128,128,0.1)',text:'#8e8e93'};}
+
+function buildDS(data,type){
+  return[
+    {label:'淨資產',data:data.map(r=>netOf(r)),borderColor:'#3d4f99',
+      backgroundColor:type==='bar'?'rgba(61,79,153,0.5)':'rgba(61,79,153,0.08)',
+      borderWidth:2,pointRadius:3,tension:.35,fill:type==='line',borderDash:[]},
+    ...fieldDefs.assets.map((f,i)=>({
+      label:short(f.name),data:data.map(r=>r[f.key]||0),
+      borderColor:COLORS[i%COLORS.length],
+      backgroundColor:type==='bar'?COLORS[i%COLORS.length]+'55':'transparent',
+      borderWidth:1.5,pointRadius:2,tension:.35,fill:false,
+      borderDash:type==='line'?[4,3]:[]})),
+    ...fieldDefs.liabs.map((f,i)=>({
+      label:short(f.name),data:data.map(r=>-(r[f.key]||0)),
+      borderColor:COLORS[(fieldDefs.assets.length+i)%COLORS.length],
+      backgroundColor:type==='bar'?COLORS[(fieldDefs.assets.length+i)%COLORS.length]+'55':'transparent',
+      borderWidth:1.5,pointRadius:2,tension:.35,fill:false,
+      borderDash:type==='line'?[2,3]:[]})
+    )];
+}
+
+function renderLineChart(cid,data,lid){
+  destroyChart(cid);if(!data.length)return;
+  const c=gc(),ds=buildDS(data,'line');
+  charts[cid]=new Chart(document.getElementById(cid),{
+    type:'line',data:{labels:data.map(r=>fmtM(r.month)),datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}},
+      scales:{x:{ticks:{color:c.text,font:{size:10},autoSkip:false,maxRotation:45},grid:{color:c.grid}},
+        y:{ticks:{color:c.text,font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:c.grid}}}}
+  });
+  if(lid){const l=document.getElementById(lid);if(l)l.innerHTML=ds.map(d=>`<span class="legend-item"><span class="legend-dot" style="background:${d.borderColor}"></span>${d.label}</span>`).join('');}
+}
+
+function renderAllCharts(){
+  const c=gc();
+  destroyChart('mainChart');
+  if(records.length){
+    const type=chartType.main,ds=buildDS(records,type);
+    charts['mainChart']=new Chart(document.getElementById('mainChart'),{
+      type,data:{labels:records.map(r=>fmtM(r.month)),datasets:ds},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.raw)}}},
+        scales:{x:{ticks:{color:c.text,font:{size:10},autoSkip:false,maxRotation:45},grid:{color:c.grid}},
+          y:{ticks:{color:c.text,font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:c.grid}}}}
+    });
+    const ml=document.getElementById('main-legend');
+    if(ml)ml.innerHTML=ds.map(d=>`<span class="legend-item"><span class="legend-dot" style="background:${d.borderColor}"></span>${d.label}</span>`).join('');
+  }
+
   destroyChart('deltaChart');
-  if (records.length >= 2) {
-    const deltas = records.slice(1).map((r, i) => totalOf(r) - totalOf(records[i]));
-    const deltaLabels = records.slice(1).map(r => fmtMonth(r.month));
-    charts['deltaChart'] = new Chart(document.getElementById('deltaChart'), {
-      type: 'bar',
-      data: {
-        labels: deltaLabels,
-        datasets: [{ label:'月變動', data: deltas, backgroundColor: deltas.map(d => d>=0?'rgba(29,158,117,0.6)':'rgba(201,64,64,0.6)'), borderColor: deltas.map(d => d>=0?'#1D9E75':'#c94040'), borderWidth:1 }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>' '+fmt(ctx.raw) } } },
-        scales:{
-          x:{ ticks:{ color:c.text, font:{size:11}, autoSkip:false, maxRotation:45 }, grid:{ color:c.grid } },
-          y:{ ticks:{ color:c.text, font:{size:11}, callback: v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v }, grid:{ color:c.grid } }
-        }
-      }
+  if(records.length>=2){
+    const deltas=records.slice(1).map((r,i)=>netOf(r)-netOf(records[i]));
+    charts['deltaChart']=new Chart(document.getElementById('deltaChart'),{
+      type:'bar',
+      data:{labels:records.slice(1).map(r=>fmtM(r.month)),datasets:[{
+        label:'月變動',data:deltas,
+        backgroundColor:deltas.map(d=>d>=0?'rgba(52,199,89,0.6)':'rgba(255,59,48,0.6)'),
+        borderColor:deltas.map(d=>d>=0?'#34c759':'#ff3b30'),borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.raw)}}},
+        scales:{x:{ticks:{color:c.text,font:{size:10},autoSkip:false,maxRotation:45},grid:{color:c.grid}},
+          y:{ticks:{color:c.text,font:{size:10},callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:c.grid}}}}
     });
   }
 
   destroyChart('pieChart');
-  const pieLegend = document.getElementById('pie-legend');
-  if (records.length > 0) {
-    const last = records[records.length - 1];
-    const allColors = ['#1D9E75','#4ecba3','#378ADD','#8abbee','#3d4f99','#a78bfa','#f59e0b','#c94040','#e06060','#f87171'];
-    const fields = [
-      ...fieldDefs.assets.map((f,i) => ({ label: f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值',''), val: last[f.key]||0, color: allColors[i % allColors.length], isLiab: false })),
-      ...fieldDefs.liabs.map((f,i)  => ({ label: f.name, val: last[f.key]||0, color: allColors[(fieldDefs.assets.length+i) % allColors.length], isLiab: true })),
-    ].filter(f => f.val > 0);
-    const grossTotal = fields.reduce((s,f) => s+f.val, 0);
-    charts['pieChart'] = new Chart(document.getElementById('pieChart'), {
-      type: 'doughnut',
-      data: {
-        labels: fields.map(f=>f.label),
-        datasets: [{ data: fields.map(f=>f.val), backgroundColor: fields.map(f=>f.color), borderColor: '#fff', borderWidth: 2 }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>' '+ctx.label+': '+fmt(ctx.raw)+' ('+(grossTotal?(ctx.raw/grossTotal*100).toFixed(1):0)+'%)' } } }
-      }
+  const pl=document.getElementById('pie-legend'),pt=document.getElementById('pie-totals');
+  if(records.length){
+    const last=records[records.length-1];
+    const allF=[
+      ...fieldDefs.assets.map((f,i)=>({name:short(f.name),val:last[f.key]||0,color:COLORS[i%COLORS.length],isLiab:false})),
+      ...fieldDefs.liabs.map((f,i)=>({name:short(f.name),val:last[f.key]||0,color:COLORS[(fieldDefs.assets.length+i)%COLORS.length],isLiab:true}))
+    ].filter(f=>f.val>0);
+    const gross=allF.reduce((s,f)=>s+f.val,0);
+    charts['pieChart']=new Chart(document.getElementById('pieChart'),{
+      type:'doughnut',
+      data:{labels:allF.map(f=>f.name),datasets:[{data:allF.map(f=>f.val),backgroundColor:allF.map(f=>f.color),borderColor:'var(--surface)',borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.raw)+' ('+(gross?(ctx.raw/gross*100).toFixed(1):0)+'%)'}}}}
     });
-    pieLegend.innerHTML = `<div style="display:flex; flex-direction:column; gap:10px;">` +
-      fields.map(f => `
-        <div><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${f.color};margin-right:8px;vertical-align:middle;"></span>${f.label}<br>
-          <span style="margin-left:20px; font-size:15px; font-weight:600; color:var(--text)">${fmt(f.val)}</span>
-          <span style="margin-left:6px; font-size:12px; color:var(--text3)">${grossTotal?(f.val/grossTotal*100).toFixed(1):0}%</span>
-        </div>`).join('') +
-      `<hr class="divider">
-       <div>資產合計<br><span style="font-size:16px; font-weight:600; color:var(--text)">${fmt(assetOf(last))}</span></div>
-       <div>負債合計<br><span style="font-size:16px; font-weight:600; color:var(--red)">-${fmt(liabOf(last))}</span></div>
-       <div>淨資產<br><span style="font-size:18px; font-weight:600; color:var(--text)">${fmt(totalOf(last))}</span></div>
-      </div>`;
+    if(pl)pl.innerHTML=allF.map(f=>`
+      <div class="pie-leg-item">
+        <div class="pli-l"><div class="pli-dot" style="background:${f.color}"></div><span>${f.name}</span></div>
+        <span class="pli-val" style="${f.isLiab?'color:var(--red)':''}">${fmt(f.val)}</span>
+      </div>`).join('');
+    if(pt)pt.innerHTML=`
+      <div class="pie-total-row"><span class="ptr-label">資產合計</span><span class="ptr-val">${fmt(assetOf(last))}</span></div>
+      <div class="pie-total-row"><span class="ptr-label">負債合計</span><span class="ptr-val" style="color:var(--red)">-${fmt(liabOf(last))}</span></div>
+      <div class="pie-total-row" style="font-size:15px;margin-top:4px;padding-top:6px;border-top:.5px solid var(--border)"><span class="ptr-label" style="font-weight:700">淨資產</span><span class="ptr-val" style="color:var(--accent)">${fmt(netOf(last))}</span></div>`;
   } else {
-    pieLegend.innerHTML = '<span style="color:var(--text3); font-size:13px;">尚無資料</span>';
+    if(pl)pl.innerHTML='<p style="font-size:13px;color:var(--text3)">尚無資料</p>';
+    if(pt)pt.innerHTML='';
   }
 }
 
-function setChart(type, el, key) {
-  currentChartType[key] = type;
-  el.closest('.tab-row').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  renderAllCharts();
+function setChart(type,el,key){
+  chartType[key]=type;
+  el.closest('.tab-row').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');renderAllCharts();
 }
 
-/* ── Dynamic form ── */
-const PALETTE = ['#1D9E75','#4ecba3','#378ADD','#8abbee','#3d4f99','#a78bfa','#f59e0b','#10b981','#c94040','#e06060'];
-
-function renderFormFields() {
-  renderFieldGroup('asset-fields', fieldDefs.assets, 'asset');
-  renderFieldGroup('liab-fields',  fieldDefs.liabs,  'liab');
+/* Form */
+function renderFormFields(){
+  renderFG('asset-fields',fieldDefs.assets,'asset');
+  renderFG('liab-fields',fieldDefs.liabs,'liab');
+  const hasUSD=[...fieldDefs.assets,...fieldDefs.liabs].some(f=>f.usd);
+  const box=document.getElementById('usd-rate-box');
+  if(box)box.style.display=hasUSD?'block':'none';
+  if(usdRate){
+    const b=document.getElementById('rate-badge');if(b)b.textContent='目前 '+usdRate;
+    const ri=document.getElementById('inp-rate');if(ri&&!ri.value)ri.value=usdRate;
+  }
 }
 
-function renderFieldGroup(containerId, fields, type) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = fields.map((f, i) => `
-    <div class="field-row" data-key="${f.key}" data-type="${type}">
-      <span class="field-name">${f.name}${f.usd ? '' : '（元）'}</span>
-      ${f.usd ? `
-        <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <input type="number" data-field="${f.key}" data-usd="true" placeholder="0 USD" min="0" oninput="calcFieldUSD(this)" style="flex:1;">
-            <span class="usd-tag" id="rate-badge">匯率載入中…</span>
+function renderFG(cid,fields,type){
+  const el=document.getElementById(cid);if(!el)return;
+  el.innerHTML=fields.map(f=>`
+    <div class="field-row">
+      <span class="fr-label">${f.name}</span>
+      ${f.usd?`
+        <div class="fr-input-wrap" style="flex-direction:column;align-items:flex-end;gap:2px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <input type="number" inputmode="decimal" step="0.01" data-field="${f.key}" data-usd="true"
+              placeholder="0" min="0" oninput="calcFUSD(this)">
+            <span class="fr-unit">USD</span>
           </div>
-          <div id="usd-row-${f.key}" style="display:none; font-size:12px; color:var(--blue);">
-            = <span id="usd-twd-${f.key}"></span> 台幣
-            <input type="hidden" data-field="${f.key}" data-twd="true">
-          </div>
-        </div>` : `
-        <input type="number" data-field="${f.key}" placeholder="0" min="0" style="flex:1;">`}
-      <button class="btn-remove-field" onclick="removeField('${type}','${f.key}')" title="移除">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span class="fr-usd-sub" id="usub-${f.key}"></span>
+          <input type="hidden" data-field="${f.key}" data-twd="true">
+        </div>
+      `:`
+        <div class="fr-input-wrap">
+          <input type="number" inputmode="numeric" pattern="[0-9]*" data-field="${f.key}"
+            placeholder="0" min="0" step="1" oninput="this.value=Math.floor(Math.abs(+this.value))||''">
+          <span class="fr-unit">元</span>
+        </div>
+      `}
+      <span class="fr-sep"></span>
+      <button class="btn-remove" onclick="removeField('${type}','${f.key}')" aria-label="移除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>`).join('');
-
-  if (usdRate) {
-    document.querySelectorAll('#rate-badge').forEach(el => {
-      el.textContent = '1 USD ≈ ' + usdRate + ' TWD';
-      el.style.color = 'var(--green)';
-    });
-  }
 }
 
-function addField(type) {
-  const name = prompt(type === 'asset' ? '新資產項目名稱：' : '新負債項目名稱：');
-  if (!name || !name.trim()) return;
-  const usd = confirm('此項目是否以美金（USD）計算？\n確定 = 美金，取消 = 台幣');
-  const key = genKey(type);
-  if (type === 'asset') fieldDefs.assets.push({ key, name: name.trim(), usd });
-  else                  fieldDefs.liabs.push({ key, name: name.trim(), usd });
-  saveFields();
-  renderFormFields();
+function addField(type){
+  const name=prompt(type==='asset'?'新資產項目名稱：':'新負債項目名稱：');
+  if(!name||!name.trim())return;
+  const usd=confirm('此項目以美金（USD）計算嗎？\n確定=美金　取消=台幣');
+  const key=genKey(type);
+  if(type==='asset')fieldDefs.assets.push({key,name:name.trim(),usd});
+  else fieldDefs.liabs.push({key,name:name.trim(),usd});
+  saveFields();renderFormFields();
 }
 
-function removeField(type, key) {
-  if (!confirm('移除此項目？（已存記錄的數值不受影響）')) return;
-  if (type === 'asset') fieldDefs.assets = fieldDefs.assets.filter(f => f.key !== key);
-  else                  fieldDefs.liabs  = fieldDefs.liabs.filter(f => f.key !== key);
-  saveFields();
-  renderFormFields();
-  renderOverview();
+function removeField(type,key){
+  if(!confirm('移除此項目？（已儲存的數值不受影響）'))return;
+  if(type==='asset')fieldDefs.assets=fieldDefs.assets.filter(f=>f.key!==key);
+  else fieldDefs.liabs=fieldDefs.liabs.filter(f=>f.key!==key);
+  saveFields();renderFormFields();renderOverview();
 }
 
-function calcFieldUSD(input) {
-  const key = input.dataset.field;
-  const usd = parseFloat(input.value) || 0;
-  const rate = parseFloat(document.getElementById('inp-rate')?.value) || usdRate || 0;
-  const twd = Math.round(usd * rate);
-  const row = document.getElementById('usd-row-' + key);
-  const twdSpan = document.getElementById('usd-twd-' + key);
-  const hidden = input.closest('.field-row').querySelector('[data-twd="true"]');
-  if (usd > 0 && rate > 0) {
-    if (row) row.style.display = 'block';
-    if (twdSpan) twdSpan.textContent = twd.toLocaleString();
-    if (hidden) hidden.value = twd;
+function calcFUSD(input){
+  const key=input.dataset.field;
+  const usd=parseFloat(input.value)||0;
+  const rate=parseFloat(document.getElementById('inp-rate')?.value)||usdRate||0;
+  const twd=Math.round(usd*rate);
+  const sub=document.getElementById('usub-'+key);
+  const hidden=input.closest('.fr-input-wrap').querySelector('[data-twd="true"]');
+  if(usd>0&&rate>0){
+    if(sub){sub.style.display='inline';sub.textContent='≈ '+fmt(twd);}
+    if(hidden)hidden.value=twd;
   } else {
-    if (row) row.style.display = 'none';
-    if (hidden) hidden.value = 0;
+    if(sub)sub.style.display='none';
+    if(hidden)hidden.value=0;
   }
 }
 
-function recalcUSD() {
-  document.querySelectorAll('[data-usd="true"]').forEach(inp => calcFieldUSD(inp));
-}
+function recalcUSD(){document.querySelectorAll('[data-usd="true"]').forEach(i=>calcFUSD(i));}
 
-/* ── Add Record ── */
-function addRecord() {
-  const month = document.getElementById('inp-month').value;
-  const msg   = document.getElementById('add-msg');
-  if (!month) { msg.style.color = 'var(--red)'; msg.textContent = '⚠ 請選擇月份'; return; }
-
-  const rec = { month, note: document.getElementById('inp-note').value.trim() };
-
-  [...fieldDefs.assets, ...fieldDefs.liabs].forEach(f => {
-    if (f.usd) {
-      const hidden = document.querySelector(`[data-field="${f.key}"][data-twd="true"]`);
-      rec[f.key] = parseFloat(hidden?.value) || 0;
+/* Add record */
+function addRecord(){
+  const month=document.getElementById('inp-month').value;
+  const msg=document.getElementById('add-msg');
+  if(!month){msg.className='save-msg err';msg.textContent='⚠ 請選擇月份';setTimeout(()=>msg.textContent='',3000);return;}
+  const rec={month,note:document.getElementById('inp-note').value.trim()};
+  [...fieldDefs.assets,...fieldDefs.liabs].forEach(f=>{
+    if(f.usd){
+      const h=document.querySelector(`[data-field="${f.key}"][data-twd="true"]`);
+      rec[f.key]=parseFloat(h?.value)||0;
     } else {
-      const inp = document.querySelector(`[data-field="${f.key}"]`);
-      rec[f.key] = parseFloat(inp?.value) || 0;
+      const i=document.querySelector(`[data-field="${f.key}"]:not([data-twd])`);
+      rec[f.key]=parseFloat(i?.value)||0;
     }
   });
-
-  const existing = records.findIndex(r => r.month === month);
-  if (existing >= 0) {
-    if (!confirm(fmtMonth(month) + ' 已有記錄，是否覆蓋？')) return;
-    records.splice(existing, 1);
-  }
-
-  records.push(rec);
-  records.sort((a,b) => a.month.localeCompare(b.month));
-  save();
-
-  msg.style.color = 'var(--green)';
-  msg.textContent = '✓ 已儲存 ' + fmtMonth(month) + ' 的記錄';
-  clearForm();
-  renderOverview();
-  setTimeout(() => { msg.textContent = ''; }, 3000);
+  const ex=records.findIndex(r=>r.month===month);
+  if(ex>=0){if(!confirm(fmtM(month)+' 已有記錄，是否覆蓋？'))return;records.splice(ex,1);}
+  records.push(rec);records.sort((a,b)=>a.month.localeCompare(b.month));save();
+  msg.className='save-msg ok';msg.textContent='✓ 已儲存 '+fmtM(month);
+  clearForm();renderOverview();setTimeout(()=>msg.textContent='',3000);
 }
 
-function clearForm() {
-  document.getElementById('inp-note').value = '';
-  document.querySelectorAll('[data-field]').forEach(inp => { inp.value = ''; });
-  document.querySelectorAll('[id^="usd-row-"]').forEach(el => el.style.display = 'none');
+function clearForm(){
+  document.getElementById('inp-note').value='';
+  document.querySelectorAll('[data-field]').forEach(i=>i.value='');
+  document.querySelectorAll('[id^="usub-"]').forEach(el=>el.style.display='none');
   setDefaultMonth();
 }
 
-function deleteRecord(month) {
-  if (!confirm('確定要刪除 ' + fmtMonth(month) + ' 的記錄？')) return;
-  records = records.filter(r => r.month !== month);
-  save();
-  renderHistory();
+function setDefaultMonth(){
+  const now=new Date(),m=String(now.getMonth()+1).padStart(2,'0');
+  const el=document.getElementById('inp-month');if(el)el.value=now.getFullYear()+'-'+m;
 }
 
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('.del-btn');
-  if (btn) deleteRecord(btn.dataset.month);
-});
-
-/* ── Goal ── */
-function saveGoal() {
-  const amount = parseFloat(document.getElementById('goal-amount').value) || 0;
-  const name = document.getElementById('goal-name').value.trim();
-  if (!amount) { alert('請輸入目標金額'); return; }
-  localStorage.setItem(GOAL_KEY, JSON.stringify({ amount, name }));
-  renderGoal();
+/* Goal */
+function saveGoal(){
+  const amount=parseFloat(document.getElementById('goal-amount').value)||0;
+  const name=document.getElementById('goal-name').value.trim();
+  if(!amount){alert('請輸入目標金額');return;}
+  localStorage.setItem(GK,JSON.stringify({amount,name}));renderGoal();
+}
+function renderGoal(){
+  let goal=null;
+  try{const g=localStorage.getItem(GK);if(g)goal=JSON.parse(g);}catch(e){}
+  if(goal){document.getElementById('goal-amount').value=goal.amount;document.getElementById('goal-name').value=goal.name||'';}
+  const d=document.getElementById('goal-display');
+  if(!goal){d.innerHTML='<p style="font-size:13px;color:var(--text3)">尚未設定目標</p>';return;}
+  const cur=records.length?netOf(records[records.length-1]):0;
+  const pct=Math.min((cur/goal.amount)*100,100),rem=Math.max(goal.amount-cur,0);
+  d.innerHTML=`
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${goal.name||'目標'}</div>
+    <div class="goal-val">${fmt(cur)}</div>
+    <div style="font-size:13px;color:var(--text3)">目標 ${fmt(goal.amount)}</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct.toFixed(1)}%"></div></div>
+    <div class="progress-labels"><span>${pct.toFixed(1)}% 完成</span><span>還差 ${fmt(rem)}</span></div>`;
 }
 
-function renderGoal() {
-  let goal = null;
-  try { const g = localStorage.getItem(GOAL_KEY); if (g) goal = JSON.parse(g); } catch(e) {}
-
-  if (goal) {
-    document.getElementById('goal-amount').value = goal.amount;
-    document.getElementById('goal-name').value = goal.name || '';
-  }
-
-  const display = document.getElementById('goal-display');
-  if (!goal) {
-    display.innerHTML = '<p style="font-size:13px; color:var(--text3);">尚未設定目標</p>';
-    return;
-  }
-
-  const current = records.length > 0 ? (records[records.length-1].cash + records[records.length-1].stock) : 0;
-  const pct = Math.min((current / goal.amount) * 100, 100);
-  const remaining = goal.amount - current;
-
-  display.innerHTML = `
-    <div style="margin-bottom:1rem;">
-      <div style="font-size:13px; color:var(--text2); margin-bottom:4px;">${goal.name || '目標'}</div>
-      <div class="goal-display">
-        <span class="goal-big">${fmt(current)}</span>
-        <span class="goal-label">/ ${fmt(goal.amount)}</span>
-      </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar" style="width:${pct.toFixed(1)}%"></div>
-      </div>
-      <div class="progress-labels">
-        <span>${pct.toFixed(1)}% 完成</span>
-        <span>還差 ${fmt(Math.max(remaining, 0))}</span>
-      </div>
-    </div>
-  `;
+/* Export */
+function exportCSV(){
+  if(!records.length){alert('尚無資料');return;}
+  const aF=[...fieldDefs.assets,...fieldDefs.liabs];
+  const h=['月份',...aF.map(f=>f.name),'淨資產','備註'].join(',');
+  const rows=records.map(r=>[fmtM(r.month),...aF.map(f=>r[f.key]||0),netOf(r),r.note||''].join(','));
+  dl('\uFEFF'+[h,...rows].join('\n'),'資產記錄.csv','text/csv');
 }
-
-/* ── Export/Import ── */
-function exportCSV() {
-  if (records.length === 0) { alert('尚無資料可匯出'); return; }
-  const allFields = [...fieldDefs.assets, ...fieldDefs.liabs];
-  const header = ['月份', ...allFields.map(f => f.name), '淨資產', '備註'].join(',');
-  const rows = records.map(r => [
-    fmtMonth(r.month),
-    ...allFields.map(f => r[f.key]||0),
-    totalOf(r),
-    r.note||''
-  ].join(','));
-  const csv = '\uFEFF' + [header, ...rows].join('\n');
-  download(csv, '資產記錄.csv', 'text/csv');
+function exportJSON(){
+  if(!records.length){alert('尚無資料');return;}
+  dl(JSON.stringify({records,fieldDefs,exportedAt:new Date().toISOString()},null,2),'資產記錄備份.json','application/json');
 }
-
-function exportJSON() {
-  if (records.length === 0) { alert('尚無資料可匯出'); return; }
-  download(JSON.stringify({ records, exportedAt: new Date().toISOString() }, null, 2), '資產記錄備份.json', 'application/json');
-}
-
-function importJSON() { document.getElementById('import-file').click(); }
-
-function handleImport(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const imported = data.records || data;
-      if (!Array.isArray(imported)) throw new Error('格式錯誤');
-      if (!confirm('匯入將合併資料，同月份以匯入檔案為主，確定繼續？')) return;
-      imported.forEach(r => {
-        const idx = records.findIndex(x => x.month === r.month);
-        if (idx >= 0) records[idx] = r; else records.push(r);
-      });
-      records.sort((a,b) => a.month.localeCompare(b.month));
-      save();
-      alert('匯入成功！共 ' + imported.length + ' 筆記錄');
-    } catch(e) { alert('匯入失敗：' + e.message); }
+function importJSON(){document.getElementById('import-file').click();}
+function handleImport(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const imp=data.records||data;
+      if(!Array.isArray(imp))throw new Error('格式錯誤');
+      if(!confirm('匯入將合併資料，同月份以匯入檔案為主。確定？'))return;
+      imp.forEach(r=>{const idx=records.findIndex(x=>x.month===r.month);idx>=0?records[idx]=r:records.push(r);});
+      records.sort((a,b)=>a.month.localeCompare(b.month));save();
+      renderOverview();alert('匯入成功！共 '+imp.length+' 筆記錄');
+    }catch(e){alert('匯入失敗：'+e.message);}
   };
-  reader.readAsText(file);
-  input.value = '';
+  reader.readAsText(file);input.value='';
+}
+function clearAll(){
+  if(!confirm('確定要清除所有資料？此操作無法復原。'))return;
+  if(!confirm('再次確認：所有記錄將被永久刪除。'))return;
+  records=[];save();localStorage.removeItem(GK);alert('已清除。');renderOverview();
+}
+function dl(content,filename,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=filename;a.click();
 }
 
-function clearAll() {
-  if (!confirm('確定要清除所有資料？此操作無法復原。')) return;
-  if (!confirm('再次確認：所有記錄將被永久刪除。')) return;
-  records = [];
-  save();
-  localStorage.removeItem(GOAL_KEY);
-  alert('已清除所有資料');
-  renderPage('export');
-}
-
-function download(content, filename, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], { type }));
-  a.download = filename;
-  a.click();
-}
-
-/* ── USD / TWD rate ── */
-let usdRate = null;
-
-async function fetchRate() {
-  try {
-    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
-    const data = await res.json();
-    usdRate = data.usd && data.usd.twd ? Math.round(data.usd.twd * 100) / 100 : null;
-    if (usdRate) {
-      document.querySelectorAll('#rate-badge').forEach(el => {
-        el.textContent = '1 USD ≈ ' + usdRate + ' TWD';
-        el.style.color = 'var(--green)';
-      });
-      const rateInput = document.getElementById('inp-rate');
-      if (rateInput && !rateInput.value) rateInput.value = usdRate;
+/* USD */
+let usdRate=null;
+async function fetchRate(){
+  try{
+    const res=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+    const data=await res.json();
+    usdRate=data.usd?.twd?Math.round(data.usd.twd*100)/100:null;
+    if(usdRate){
+      const b=document.getElementById('rate-badge');if(b)b.textContent='目前 '+usdRate;
+      const ri=document.getElementById('inp-rate');if(ri&&!ri.value)ri.value=usdRate;
     }
-  } catch(e) {
-    document.querySelectorAll('#rate-badge').forEach(el => { el.textContent = '匯率載入失敗'; });
-  }
+  }catch(e){}
 }
 
-function setDefaultMonth() {
-  const now = new Date();
-  const m = String(now.getMonth()+1).padStart(2,'0');
-  document.getElementById('inp-month').value = now.getFullYear() + '-' + m;
-}
-
-load();
-loadFields();
-setDefaultMonth();
-renderFormFields();
-fetchRate();
-renderOverview();
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
-}
+/* Init */
+load();loadFields();setDefaultMonth();renderFormFields();fetchRate();renderOverview();
+if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 </script>
 </body>
 </html>
