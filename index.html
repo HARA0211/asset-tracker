@@ -321,6 +321,67 @@
 
   .empty svg { width: 40px; height: 40px; margin: 0 auto 12px; display: block; opacity: 0.35; }
 
+  /* ── Dynamic field rows ── */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .field-row .field-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 0;
+  }
+
+  .field-row input[type="number"] {
+    width: 140px;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  .field-row .usd-tag {
+    font-size: 11px;
+    color: var(--green);
+    white-space: nowrap;
+  }
+
+  .btn-add-field {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--text3);
+    background: none;
+    border: 0.5px dashed var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    font-family: inherit;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-add-field:hover { background: var(--surface2); color: var(--text); }
+
+  .btn-remove-field {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-remove-field:hover { color: var(--red); }
+
   /* ── Form section label ── */
   .form-section-label {
     font-size: 12px;
@@ -496,48 +557,20 @@
         </div>
       </div>
 
-      <div style="font-size:11px; font-weight:600; color:var(--green); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        資產
-      </div>
-      <div class="summary-grid" style="margin-bottom:1.25rem;">
-        <div class="metric">
-          <div class="metric-label">台幣現金</div>
-          <div class="metric-value" id="m-twcash">–</div>
-          <div class="metric-sub" id="m-twcash-pct"></div>
+      <div id="asset-cards-wrap">
+        <div style="font-size:11px; font-weight:600; color:var(--green); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          資產
         </div>
-        <div class="metric">
-          <div class="metric-label">外幣現金</div>
-          <div class="metric-value" id="m-fxcash">–</div>
-          <div class="metric-sub" id="m-fxcash-pct"></div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">台股</div>
-          <div class="metric-value" id="m-twstock">–</div>
-          <div class="metric-sub" id="m-twstock-pct"></div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">美股</div>
-          <div class="metric-value" id="m-usstock">–</div>
-          <div class="metric-sub" id="m-usstock-pct"></div>
-        </div>
+        <div class="summary-grid" id="asset-metrics" style="margin-bottom:1.25rem;"></div>
       </div>
 
-      <div style="font-size:11px; font-weight:600; color:var(--red); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
-        負債
-      </div>
-      <div class="summary-grid">
-        <div class="metric">
-          <div class="metric-label">信用卡未結清</div>
-          <div class="metric-value down" id="m-creditcard">–</div>
-          <div class="metric-sub" id="m-creditcard-pct"></div>
+      <div id="liab-cards-wrap">
+        <div style="font-size:11px; font-weight:600; color:var(--red); letter-spacing:0.05em; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+          負債
         </div>
-        <div class="metric">
-          <div class="metric-label">信用貸款</div>
-          <div class="metric-value down" id="m-loan">–</div>
-          <div class="metric-sub" id="m-loan-pct"></div>
-        </div>
+        <div class="summary-grid" id="liab-metrics"></div>
       </div>
 
       <div class="card">
@@ -546,61 +579,41 @@
           新增本月記錄
         </div>
 
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>月份</label>
+          <input type="month" id="inp-month">
+        </div>
+
         <div class="form-section-label">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--green)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           資產
         </div>
-        <div class="form-grid">
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <label>月份</label>
-            <input type="month" id="inp-month">
-          </div>
-          <div class="form-group">
-            <label>台幣現金（元）</label>
-            <input type="number" id="inp-twcash" placeholder="0" min="0">
-          </div>
-          <div class="form-group">
-            <label>外幣現金（折台幣）</label>
-            <input type="number" id="inp-fxcash" placeholder="0" min="0">
-          </div>
-          <div class="form-group">
-            <label>台股總預估現值（元）</label>
-            <input type="number" id="inp-twstock" placeholder="0" min="0">
-          </div>
-          <div class="form-group">
-            <label style="display:flex; align-items:center; justify-content:space-between;">
-              <span>美股庫存現值（USD）</span>
-              <span id="rate-badge" style="font-size:11px; color:var(--text3); font-weight:400;">匯率載入中…</span>
-            </label>
-            <input type="number" id="inp-usstock-usd" placeholder="0" min="0" oninput="calcUSD()">
-          </div>
+        <div id="asset-fields"></div>
+        <button class="btn-add-field" onclick="addField('asset')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          新增資產項目
+        </button>
+
+        <div class="form-section-label" style="margin-top:1.25rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--red)"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+          負債
         </div>
+        <div id="liab-fields"></div>
+        <button class="btn-add-field" onclick="addField('liab')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          新增負債項目
+        </button>
 
         <div id="usd-preview" style="display:none; margin-top:10px; padding:10px 12px; background:var(--blue-bg); border-radius:var(--radius-sm); font-size:13px; color:var(--blue);">
           <span id="usd-preview-text"></span>
           <span style="margin-left:8px; font-size:12px; color:var(--text3);">（匯率可手動調整）</span>
           <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
             <span style="font-size:12px; color:var(--text2);">使用匯率：1 USD =</span>
-            <input type="number" id="inp-rate" style="width:80px; font-size:13px;" oninput="calcUSD()">
+            <input type="number" id="inp-rate" style="width:80px; font-size:13px;" oninput="recalcUSD()">
             <span style="font-size:12px; color:var(--text2);">TWD</span>
           </div>
         </div>
-        <input type="hidden" id="inp-usstock">
 
-        <div class="form-section-label" style="margin-top:1.25rem;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;color:var(--red)"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
-          負債
-        </div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>信用卡尚未結清（元）</label>
-            <input type="number" id="inp-creditcard" placeholder="0" min="0">
-          </div>
-          <div class="form-group">
-            <label>信用貸款餘額（元）</label>
-            <input type="number" id="inp-loan" placeholder="0" min="0">
-          </div>
-        </div>
         <div class="form-note">
           <div class="form-group">
             <label>備註（選填）</label>
@@ -644,7 +657,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead>
+            <thead id="history-thead">
               <tr>
                 <th>月份</th>
                 <th style="text-align:right">台幣現金</th>
@@ -852,47 +865,77 @@ function renderPage(id) {
   if (id === 'goal') renderGoal();
 }
 
-/* ── Overview ── */
-function assetOf(r) { return (r.twCash||0)+(r.fxCash||0)+(r.twStock||0)+(r.usStock||0); }
-function liabOf(r)  { return (r.creditCard||0)+(r.loan||0); }
+/* ── Field definitions (stored in localStorage) ── */
+const FIELDS_KEY = 'asset_fields_v1';
+const DEFAULT_ASSET_FIELDS = [
+  { key: 'twCash',  name: '台幣現金',        usd: false },
+  { key: 'fxCash',  name: '外幣現金（折台幣）', usd: false },
+  { key: 'twStock', name: '台股總預估現值',    usd: false },
+  { key: 'usStock', name: '美股庫存現值',     usd: true  },
+];
+const DEFAULT_LIAB_FIELDS = [
+  { key: 'creditCard', name: '信用卡尚未結清', usd: false },
+  { key: 'loan',       name: '信用貸款',       usd: false },
+];
+
+let fieldDefs = { assets: [], liabs: [] };
+
+function loadFields() {
+  try {
+    const raw = localStorage.getItem(FIELDS_KEY);
+    if (raw) { fieldDefs = JSON.parse(raw); return; }
+  } catch(e) {}
+  fieldDefs = {
+    assets: DEFAULT_ASSET_FIELDS.map(f => ({...f})),
+    liabs:  DEFAULT_LIAB_FIELDS.map(f => ({...f})),
+  };
+  saveFields();
+}
+
+function saveFields() {
+  localStorage.setItem(FIELDS_KEY, JSON.stringify(fieldDefs));
+}
+
+function genKey(prefix) {
+  return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+}
+
+/* ── Totals ── */
+function assetOf(r) {
+  return fieldDefs.assets.reduce((s, f) => s + (r[f.key] || 0), 0);
+}
+function liabOf(r) {
+  return fieldDefs.liabs.reduce((s, f) => s + (r[f.key] || 0), 0);
+}
 function totalOf(r) { return assetOf(r) - liabOf(r); }
 
+/* ── Overview ── */
 function renderOverview() {
   const now = new Date();
   document.getElementById('overview-date').textContent =
     now.getFullYear() + ' 年 ' + (now.getMonth()+1) + ' 月 ' + now.getDate() + ' 日';
 
+  const totalEl = document.getElementById('m-total');
+  const changeEl = document.getElementById('m-change');
+  const assetMetrics = document.getElementById('asset-metrics');
+  const liabMetrics  = document.getElementById('liab-metrics');
+
   if (records.length === 0) {
-    ['m-total','m-twcash','m-fxcash','m-twstock','m-usstock','m-creditcard','m-loan'].forEach(id => document.getElementById(id).textContent = '–');
-    document.getElementById('m-change').textContent = '';
-    ['m-twcash-pct','m-fxcash-pct','m-twstock-pct','m-usstock-pct','m-creditcard-pct','m-loan-pct'].forEach(id => document.getElementById(id).textContent = '');
+    totalEl.textContent = '–';
+    changeEl.textContent = '';
+    assetMetrics.innerHTML = '';
+    liabMetrics.innerHTML  = '';
     destroyChart('overviewChart');
     return;
   }
 
-  const last = records[records.length - 1];
+  const last  = records[records.length - 1];
   const asset = assetOf(last);
   const liab  = liabOf(last);
   const net   = asset - liab;
 
-  document.getElementById('m-total').textContent = fmt(net);
-  document.getElementById('m-twcash').textContent  = fmt(last.twCash||0);
-  document.getElementById('m-fxcash').textContent  = fmt(last.fxCash||0);
-  document.getElementById('m-twstock').textContent = fmt(last.twStock||0);
-  document.getElementById('m-usstock').textContent = fmt(last.usStock||0);
-  document.getElementById('m-creditcard').textContent = fmt(last.creditCard||0);
-  document.getElementById('m-loan').textContent       = fmt(last.loan||0);
+  totalEl.textContent = fmt(net);
 
-  const apct = v => asset ? (v/asset*100).toFixed(1)+'%' : '0%';
-  const lpct = v => liab  ? (v/liab *100).toFixed(1)+'%' : '0%';
-  document.getElementById('m-twcash-pct').textContent  = '佔資產 ' + apct(last.twCash||0);
-  document.getElementById('m-fxcash-pct').textContent  = '佔資產 ' + apct(last.fxCash||0);
-  document.getElementById('m-twstock-pct').textContent = '佔資產 ' + apct(last.twStock||0);
-  document.getElementById('m-usstock-pct').textContent = '佔資產 ' + apct(last.usStock||0);
-  document.getElementById('m-creditcard-pct').textContent = '佔負債 ' + lpct(last.creditCard||0);
-  document.getElementById('m-loan-pct').textContent       = '佔負債 ' + lpct(last.loan||0);
-
-  const changeEl = document.getElementById('m-change');
   if (records.length >= 2) {
     const prevNet = totalOf(records[records.length - 2]);
     const diff = net - prevNet;
@@ -903,6 +946,20 @@ function renderOverview() {
     changeEl.textContent = '';
   }
 
+  assetMetrics.innerHTML = fieldDefs.assets.map(f => `
+    <div class="metric">
+      <div class="metric-label">${f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值','')}</div>
+      <div class="metric-value">${fmt(last[f.key]||0)}</div>
+      <div class="metric-sub">${asset ? '佔資產 '+(((last[f.key]||0)/asset)*100).toFixed(1)+'%' : ''}</div>
+    </div>`).join('');
+
+  liabMetrics.innerHTML = fieldDefs.liabs.map(f => `
+    <div class="metric">
+      <div class="metric-label">${f.name}</div>
+      <div class="metric-value down">${fmt(last[f.key]||0)}</div>
+      <div class="metric-sub">${liab ? '佔負債 '+(((last[f.key]||0)/liab)*100).toFixed(1)+'%' : ''}</div>
+    </div>`).join('');
+
   renderLineChart('overviewChart', records.slice(-12));
 }
 
@@ -910,20 +967,28 @@ function renderOverview() {
 function renderHistory() {
   const count = records.length;
   document.getElementById('history-count').textContent = '共 ' + count + ' 筆記錄';
-
   const empty = document.getElementById('history-empty');
   const tbody = document.getElementById('history-tbody');
 
-  if (count === 0) {
-    empty.style.display = 'block';
-    tbody.innerHTML = '';
-    return;
-  }
+  if (count === 0) { empty.style.display = 'block'; tbody.innerHTML = ''; return; }
   empty.style.display = 'none';
+
+  const allFields = [...fieldDefs.assets, ...fieldDefs.liabs];
+
+  // rebuild header
+  document.getElementById('history-thead').innerHTML =
+    '<tr>' +
+    '<th>月份</th>' +
+    fieldDefs.assets.map(f => `<th style="text-align:right">${f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值','')}</th>`).join('') +
+    fieldDefs.liabs.map(f => `<th style="text-align:right; color:var(--red)">${f.name}</th>`).join('') +
+    '<th style="text-align:right">淨資產</th>' +
+    '<th style="text-align:right">月變動</th>' +
+    '<th>備註</th><th></th>' +
+    '</tr>';
 
   const sorted = [...records].reverse();
   tbody.innerHTML = sorted.map((r, i) => {
-    const a = assetOf(r), l = liabOf(r), net = a - l;
+    const net = totalOf(r);
     let deltaHtml = '–';
     const origIdx = records.length - 1 - i;
     if (origIdx > 0) {
@@ -935,15 +1000,11 @@ function renderHistory() {
     }
     return `<tr>
       <td style="font-weight:500">${fmtMonth(r.month)}</td>
-      <td style="text-align:right">${fmt(r.twCash||0)}</td>
-      <td style="text-align:right">${fmt(r.fxCash||0)}</td>
-      <td style="text-align:right">${fmt(r.twStock||0)}</td>
-      <td style="text-align:right">${fmt(r.usStock||0)}</td>
-      <td style="text-align:right; color:var(--red)">${(r.creditCard||0) > 0 ? fmt(r.creditCard) : '–'}</td>
-      <td style="text-align:right; color:var(--red)">${(r.loan||0) > 0 ? fmt(r.loan) : '–'}</td>
+      ${fieldDefs.assets.map(f => `<td style="text-align:right">${fmt(r[f.key]||0)}</td>`).join('')}
+      ${fieldDefs.liabs.map(f => `<td style="text-align:right; color:var(--red)">${(r[f.key]||0)>0?fmt(r[f.key]):'–'}</td>`).join('')}
       <td style="text-align:right; font-weight:600">${fmt(net)}</td>
       <td style="text-align:right">${deltaHtml}</td>
-      <td style="font-size:12px; color:var(--text3)">${r.note || '–'}</td>
+      <td style="font-size:12px; color:var(--text3)">${r.note||'–'}</td>
       <td><button class="btn-icon del-btn" data-month="${r.month}" title="刪除">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button></td>
@@ -1043,14 +1104,10 @@ function renderAllCharts() {
   const pieLegend = document.getElementById('pie-legend');
   if (records.length > 0) {
     const last = records[records.length - 1];
-    const total = totalOf(last);
+    const allColors = ['#1D9E75','#4ecba3','#378ADD','#8abbee','#3d4f99','#a78bfa','#f59e0b','#c94040','#e06060','#f87171'];
     const fields = [
-      { label:'台幣現金', val: last.twCash||0,     color:'#1D9E75' },
-      { label:'外幣現金', val: last.fxCash||0,     color:'#4ecba3' },
-      { label:'台股',     val: last.twStock||0,    color:'#378ADD' },
-      { label:'美股',     val: last.usStock||0,    color:'#8abbee' },
-      { label:'信用卡',   val: last.creditCard||0, color:'#c94040' },
-      { label:'信貸',     val: last.loan||0,       color:'#e06060' },
+      ...fieldDefs.assets.map((f,i) => ({ label: f.name.replace('（折台幣）','').replace('總預估現值','').replace('庫存現值',''), val: last[f.key]||0, color: allColors[i % allColors.length], isLiab: false })),
+      ...fieldDefs.liabs.map((f,i)  => ({ label: f.name, val: last[f.key]||0, color: allColors[(fieldDefs.assets.length+i) % allColors.length], isLiab: true })),
     ].filter(f => f.val > 0);
     const grossTotal = fields.reduce((s,f) => s+f.val, 0);
     charts['pieChart'] = new Chart(document.getElementById('pieChart'), {
@@ -1087,19 +1144,103 @@ function setChart(type, el, key) {
   renderAllCharts();
 }
 
+/* ── Dynamic form ── */
+const PALETTE = ['#1D9E75','#4ecba3','#378ADD','#8abbee','#3d4f99','#a78bfa','#f59e0b','#10b981','#c94040','#e06060'];
+
+function renderFormFields() {
+  renderFieldGroup('asset-fields', fieldDefs.assets, 'asset');
+  renderFieldGroup('liab-fields',  fieldDefs.liabs,  'liab');
+}
+
+function renderFieldGroup(containerId, fields, type) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = fields.map((f, i) => `
+    <div class="field-row" data-key="${f.key}" data-type="${type}">
+      <span class="field-name">${f.name}${f.usd ? '' : '（元）'}</span>
+      ${f.usd ? `
+        <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" data-field="${f.key}" data-usd="true" placeholder="0 USD" min="0" oninput="calcFieldUSD(this)" style="flex:1;">
+            <span class="usd-tag" id="rate-badge">匯率載入中…</span>
+          </div>
+          <div id="usd-row-${f.key}" style="display:none; font-size:12px; color:var(--blue);">
+            = <span id="usd-twd-${f.key}"></span> 台幣
+            <input type="hidden" data-field="${f.key}" data-twd="true">
+          </div>
+        </div>` : `
+        <input type="number" data-field="${f.key}" placeholder="0" min="0" style="flex:1;">`}
+      <button class="btn-remove-field" onclick="removeField('${type}','${f.key}')" title="移除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('');
+
+  if (usdRate) {
+    document.querySelectorAll('#rate-badge').forEach(el => {
+      el.textContent = '1 USD ≈ ' + usdRate + ' TWD';
+      el.style.color = 'var(--green)';
+    });
+  }
+}
+
+function addField(type) {
+  const name = prompt(type === 'asset' ? '新資產項目名稱：' : '新負債項目名稱：');
+  if (!name || !name.trim()) return;
+  const usd = confirm('此項目是否以美金（USD）計算？\n確定 = 美金，取消 = 台幣');
+  const key = genKey(type);
+  if (type === 'asset') fieldDefs.assets.push({ key, name: name.trim(), usd });
+  else                  fieldDefs.liabs.push({ key, name: name.trim(), usd });
+  saveFields();
+  renderFormFields();
+}
+
+function removeField(type, key) {
+  if (!confirm('移除此項目？（已存記錄的數值不受影響）')) return;
+  if (type === 'asset') fieldDefs.assets = fieldDefs.assets.filter(f => f.key !== key);
+  else                  fieldDefs.liabs  = fieldDefs.liabs.filter(f => f.key !== key);
+  saveFields();
+  renderFormFields();
+  renderOverview();
+}
+
+function calcFieldUSD(input) {
+  const key = input.dataset.field;
+  const usd = parseFloat(input.value) || 0;
+  const rate = parseFloat(document.getElementById('inp-rate')?.value) || usdRate || 0;
+  const twd = Math.round(usd * rate);
+  const row = document.getElementById('usd-row-' + key);
+  const twdSpan = document.getElementById('usd-twd-' + key);
+  const hidden = input.closest('.field-row').querySelector('[data-twd="true"]');
+  if (usd > 0 && rate > 0) {
+    if (row) row.style.display = 'block';
+    if (twdSpan) twdSpan.textContent = twd.toLocaleString();
+    if (hidden) hidden.value = twd;
+  } else {
+    if (row) row.style.display = 'none';
+    if (hidden) hidden.value = 0;
+  }
+}
+
+function recalcUSD() {
+  document.querySelectorAll('[data-usd="true"]').forEach(inp => calcFieldUSD(inp));
+}
+
 /* ── Add Record ── */
 function addRecord() {
-  const month      = document.getElementById('inp-month').value;
-  const twCash     = parseFloat(document.getElementById('inp-twcash').value)     || 0;
-  const fxCash     = parseFloat(document.getElementById('inp-fxcash').value)     || 0;
-  const twStock    = parseFloat(document.getElementById('inp-twstock').value)    || 0;
-  const usStock    = parseFloat(document.getElementById('inp-usstock').value)    || 0;
-  const creditCard = parseFloat(document.getElementById('inp-creditcard').value) || 0;
-  const loan       = parseFloat(document.getElementById('inp-loan').value)       || 0;
-  const note       = document.getElementById('inp-note').value.trim();
-  const msg        = document.getElementById('add-msg');
-
+  const month = document.getElementById('inp-month').value;
+  const msg   = document.getElementById('add-msg');
   if (!month) { msg.style.color = 'var(--red)'; msg.textContent = '⚠ 請選擇月份'; return; }
+
+  const rec = { month, note: document.getElementById('inp-note').value.trim() };
+
+  [...fieldDefs.assets, ...fieldDefs.liabs].forEach(f => {
+    if (f.usd) {
+      const hidden = document.querySelector(`[data-field="${f.key}"][data-twd="true"]`);
+      rec[f.key] = parseFloat(hidden?.value) || 0;
+    } else {
+      const inp = document.querySelector(`[data-field="${f.key}"]`);
+      rec[f.key] = parseFloat(inp?.value) || 0;
+    }
+  });
 
   const existing = records.findIndex(r => r.month === month);
   if (existing >= 0) {
@@ -1107,22 +1248,21 @@ function addRecord() {
     records.splice(existing, 1);
   }
 
-  records.push({ month, twCash, fxCash, twStock, usStock, creditCard, loan, note });
+  records.push(rec);
   records.sort((a,b) => a.month.localeCompare(b.month));
   save();
 
   msg.style.color = 'var(--green)';
   msg.textContent = '✓ 已儲存 ' + fmtMonth(month) + ' 的記錄';
-  ['inp-twcash','inp-fxcash','inp-twstock','inp-usstock-usd','inp-usstock','inp-creditcard','inp-loan','inp-note'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('usd-preview').style.display = 'none';
+  clearForm();
   renderOverview();
   setTimeout(() => { msg.textContent = ''; }, 3000);
 }
 
 function clearForm() {
-  ['inp-month','inp-twcash','inp-fxcash','inp-twstock','inp-usstock-usd','inp-usstock','inp-creditcard','inp-loan','inp-note'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('add-msg').textContent = '';
-  document.getElementById('usd-preview').style.display = 'none';
+  document.getElementById('inp-note').value = '';
+  document.querySelectorAll('[data-field]').forEach(inp => { inp.value = ''; });
+  document.querySelectorAll('[id^="usd-row-"]').forEach(el => el.style.display = 'none');
   setDefaultMonth();
 }
 
@@ -1187,10 +1327,13 @@ function renderGoal() {
 /* ── Export/Import ── */
 function exportCSV() {
   if (records.length === 0) { alert('尚無資料可匯出'); return; }
-  const header = '月份,台幣現金,外幣現金,台股,美股,信用卡未結清,信用貸款,淨資產,備註';
+  const allFields = [...fieldDefs.assets, ...fieldDefs.liabs];
+  const header = ['月份', ...allFields.map(f => f.name), '淨資產', '備註'].join(',');
   const rows = records.map(r => [
-    fmtMonth(r.month), r.twCash||0, r.fxCash||0, r.twStock||0, r.usStock||0,
-    r.creditCard||0, r.loan||0, totalOf(r), r.note||''
+    fmtMonth(r.month),
+    ...allFields.map(f => r[f.key]||0),
+    totalOf(r),
+    r.note||''
   ].join(','));
   const csv = '\uFEFF' + [header, ...rows].join('\n');
   download(csv, '資產記錄.csv', 'text/csv');
@@ -1247,43 +1390,20 @@ function download(content, filename, type) {
 let usdRate = null;
 
 async function fetchRate() {
-  const badge = document.getElementById('rate-badge');
   try {
     const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
     const data = await res.json();
     usdRate = data.usd && data.usd.twd ? Math.round(data.usd.twd * 100) / 100 : null;
     if (usdRate) {
-      badge.textContent = '1 USD ≈ ' + usdRate + ' TWD';
-      badge.style.color = 'var(--green)';
+      document.querySelectorAll('#rate-badge').forEach(el => {
+        el.textContent = '1 USD ≈ ' + usdRate + ' TWD';
+        el.style.color = 'var(--green)';
+      });
       const rateInput = document.getElementById('inp-rate');
       if (rateInput && !rateInput.value) rateInput.value = usdRate;
-      calcUSD();
-    } else {
-      badge.textContent = '匯率載入失敗';
     }
   } catch(e) {
-    badge.textContent = '匯率載入失敗';
-  }
-}
-
-function calcUSD() {
-  const usd = parseFloat(document.getElementById('inp-usstock-usd').value) || 0;
-  const rate = parseFloat(document.getElementById('inp-rate').value) || usdRate || 0;
-  const preview = document.getElementById('usd-preview');
-  const hidden = document.getElementById('inp-usstock');
-  const rateInput = document.getElementById('inp-rate');
-
-  if (!rateInput.value && usdRate) rateInput.value = usdRate;
-
-  if (usd > 0 && rate > 0) {
-    const twd = Math.round(usd * rate);
-    hidden.value = twd;
-    document.getElementById('usd-preview-text').textContent =
-      'USD ' + usd.toLocaleString() + ' × ' + rate + ' = NT$' + twd.toLocaleString();
-    preview.style.display = 'block';
-  } else {
-    hidden.value = 0;
-    preview.style.display = 'none';
+    document.querySelectorAll('#rate-badge').forEach(el => { el.textContent = '匯率載入失敗'; });
   }
 }
 
@@ -1294,7 +1414,9 @@ function setDefaultMonth() {
 }
 
 load();
+loadFields();
 setDefaultMonth();
+renderFormFields();
 fetchRate();
 renderOverview();
 
