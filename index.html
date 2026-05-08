@@ -359,6 +359,14 @@
   /* ── Divider ── */
   .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
 
+  /* ── Pie chart layout ── */
+  .pie-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+
   /* ── Bottom nav bar (mobile) ── */
   .bottom-nav {
     display: none;
@@ -414,6 +422,7 @@
     .metric { padding: 0.85rem 1rem; }
     .metric-value { font-size: 18px; }
     .card { padding: 1rem 1.1rem; margin-bottom: 1rem; }
+    .pie-layout { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; gap: 8px; }
     .chart-wrap { height: 220px; }
     table { font-size: 12px; }
@@ -542,7 +551,7 @@
           資產
         </div>
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group" style="grid-column: 1 / -1;">
             <label>月份</label>
             <input type="month" id="inp-month">
           </div>
@@ -607,14 +616,6 @@
           <button class="btn" onclick="clearForm()">清除</button>
           <div id="add-msg" style="font-size:13px; margin-left:4px;"></div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-          最近 5 筆記錄
-        </div>
-        <div id="recent-records"></div>
       </div>
 
       <div class="card">
@@ -698,8 +699,8 @@
 
       <div class="card">
         <div class="card-title">資產組成比例（最新月份）</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-items:center;">
-          <div class="chart-wrap" style="height:200px;"><canvas id="pieChart" role="img" aria-label="資產組成圓餅圖"></canvas></div>
+        <div class="pie-layout">
+          <div class="chart-wrap" style="height:220px;"><canvas id="pieChart" role="img" aria-label="資產組成圓餅圖"></canvas></div>
           <div id="pie-legend" style="font-size:13px; color:var(--text2);"></div>
         </div>
       </div>
@@ -865,7 +866,6 @@ function renderOverview() {
     ['m-total','m-twcash','m-fxcash','m-twstock','m-usstock','m-creditcard','m-loan'].forEach(id => document.getElementById(id).textContent = '–');
     document.getElementById('m-change').textContent = '';
     ['m-twcash-pct','m-fxcash-pct','m-twstock-pct','m-usstock-pct','m-creditcard-pct','m-loan-pct'].forEach(id => document.getElementById(id).textContent = '');
-    document.getElementById('recent-records').innerHTML = '<div class="empty">尚未有記錄</div>';
     destroyChart('overviewChart');
     return;
   }
@@ -904,31 +904,6 @@ function renderOverview() {
   }
 
   renderLineChart('overviewChart', records.slice(-12));
-
-  const recent = [...records].reverse().slice(0, 5);
-  const tbody = recent.map(r => {
-    const a = assetOf(r), l = liabOf(r);
-    return `<tr>
-      <td style="font-weight:500">${fmtMonth(r.month)}</td>
-      <td style="text-align:right">${fmt(r.twCash||0)}</td>
-      <td style="text-align:right">${fmt(r.fxCash||0)}</td>
-      <td style="text-align:right">${fmt(r.twStock||0)}</td>
-      <td style="text-align:right">${fmt(r.usStock||0)}</td>
-      <td style="text-align:right; color:var(--red)">${l > 0 ? '-'+fmt(l) : '–'}</td>
-      <td style="text-align:right; font-weight:600">${fmt(a - l)}</td>
-      <td style="font-size:12px; color:var(--text3)">${r.note || '–'}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('recent-records').innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>月份</th><th style="text-align:right">台幣現金</th><th style="text-align:right">外幣現金</th><th style="text-align:right">台股</th><th style="text-align:right">美股</th><th style="text-align:right">負債</th><th style="text-align:right">淨資產</th><th>備註</th>
-        </tr></thead>
-        <tbody>${tbody}</tbody>
-      </table>
-    </div>`;
 }
 
 /* ── History ── */
