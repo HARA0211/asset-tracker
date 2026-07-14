@@ -4,8 +4,8 @@
   "description": "記錄每月資產與負債，追蹤淨資產變化",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f7f6f3",
-  "theme_color": "#3d4f99",
+  "background_color": "#f2efe9",
+  "theme_color": "#6b8f71",
   "orientation": "portrait-primary",
   "lang": "zh-TW",
   "icons": [
